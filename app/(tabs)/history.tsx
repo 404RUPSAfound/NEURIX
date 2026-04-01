@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Dimensions, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Dimensions, Platform, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { 
@@ -38,7 +38,8 @@ export default function DisasterHistory() {
 
   return (
     <View style={s.container}>
-      <LinearGradient colors={['#05080A', '#020508']} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={['#ebfbedff', '#cafbc1ff']} style={StyleSheet.absoluteFill} />
+      <Image source={require('../../assets/images/bg-pattern.jpg')} style={[StyleSheet.absoluteFill, { opacity: 0.12 }]} resizeMode="cover" />
       
       {/* HUD Header */}
       <View style={s.header}>
@@ -112,34 +113,34 @@ function MetricBox({ label, val, color }: any) {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#05080A' },
-  header: { paddingTop: 60, paddingHorizontal: 24, paddingBottom: 24, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
-  hdrTitle: { fontFamily: DESIGN.fontDisplayBlack, color: '#FFF', fontSize: 16, letterSpacing: 2 },
-  hdrSub: { fontFamily: DESIGN.fontLabelSemiBold, color: '#555', fontSize: 8, letterSpacing: 1, textTransform: 'uppercase' },
-  searchBtn: { width: 44, height: 44, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.03)', alignItems: 'center', justifyContent: 'center' },
+  container: { flex: 1, backgroundColor: '#ebfbedff' },
+  header: { paddingTop: 60, paddingHorizontal: 24, paddingBottom: 24, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.05)' },
+  hdrTitle: { fontFamily: DESIGN.fontDisplayBlack, color: '#1E2F23', fontSize: 16, letterSpacing: 2 },
+  hdrSub: { fontFamily: DESIGN.fontLabelSemiBold, color: '#90A4AE', fontSize: 8, letterSpacing: 1, textTransform: 'uppercase' },
+  searchBtn: { width: 44, height: 44, borderRadius: 14, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center' },
 
   content: { padding: 24, paddingBottom: 110, gap: 16 },
-  metricsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 24, backgroundColor: 'rgba(255,255,255,0.02)', padding: 20, borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
+  metricsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 24, backgroundColor: '#FFF', padding: 20, borderRadius: 24, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' },
   metricBox: { alignItems: 'center' },
   metricVal: { fontFamily: DESIGN.fontDisplayBlack, fontSize: 24 },
-  metricLab: { fontFamily: DESIGN.fontLabel, color: '#555', fontSize: 7, letterSpacing: 1, marginTop: 4, textTransform: 'uppercase' },
+  metricLab: { fontFamily: DESIGN.fontLabel, color: '#90A4AE', fontSize: 7, letterSpacing: 1, marginTop: 4, textTransform: 'uppercase' },
 
-  historyCard: { padding: 22, borderRadius: 28, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', overflow: 'hidden' },
+  historyCard: { padding: 22, borderRadius: 28, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)', overflow: 'hidden' },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   badge: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 10 },
   badgeText: { fontFamily: DESIGN.fontLabelSemiBold, fontSize: 9, letterSpacing: 1 },
-  cardTime: { fontFamily: DESIGN.fontLabel, color: '#444', fontSize: 9 },
+  cardTime: { fontFamily: DESIGN.fontLabel, color: '#B0BEC5', fontSize: 9 },
   
   cardBody: { marginBottom: 20 },
-  cardTitle: { fontFamily: DESIGN.fontBold, color: '#FFF', fontSize: 16 },
+  cardTitle: { fontFamily: DESIGN.fontBold, color: '#1E2F23', fontSize: 16 },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 6 },
-  statusText: { fontFamily: DESIGN.fontLabelSemiBold, color: '#555', fontSize: 8, letterSpacing: 1 },
+  statusText: { fontFamily: DESIGN.fontLabelSemiBold, color: '#90A4AE', fontSize: 8, letterSpacing: 1 },
   statusDot: { width: 6, height: 6, borderRadius: 3 },
 
-  cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.03)', paddingTop: 16 },
-  meshBadge: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(255,255,255,0.03)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
+  cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.03)', paddingTop: 16 },
+  meshBadge: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#FFF', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
   meshText: { fontFamily: DESIGN.fontLabelSemiBold, color: DESIGN.info, fontSize: 8, letterSpacing: 1 },
 
   emptyState: { alignItems: 'center', gap: 20, marginTop: 100, opacity: 0.5 },
-  emptyText: { fontFamily: DESIGN.fontBody, color: '#7A8C99', fontSize: 13 },
+  emptyText: { fontFamily: DESIGN.fontBody, color: '#546E7A', fontSize: 13 },
 });

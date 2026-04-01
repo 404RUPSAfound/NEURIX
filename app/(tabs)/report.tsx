@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator, Dimensions, Animated, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator, Dimensions, Animated, Platform, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -15,7 +15,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Audio } from 'expo-av';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
-import { mapAPI } from '@/Store/api';
+import { mapAPI, analyzeAPI } from '@/Store/api';
 
 const { width } = Dimensions.get('window');
 
@@ -42,6 +42,8 @@ export default function TacticalHybrid() {
   // Elite Scanning States
   const [scanning, setScanning] = useState(false);
   const [scanStatus, setScanStatus] = useState('READY');
+  const [recording, setRecording] = useState<Audio.Recording | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
   const scanProgress = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -70,12 +72,14 @@ export default function TacticalHybrid() {
       }
 
       setScanStatus('PARSING...');
+      setScanStatus('SYNTHESIZING...');
       const res = await mapAPI.scanDocument(fileToUpload);
       if (res.success) {
-          setScanStatus('SYNTHESIZING...');
-          const intel = res.analysis || res.raw_text || "";
-          setDescription(prev => (prev ? prev + "\n\n" : "") + "[NEURAL_INTEL]: " + intel.slice(0, 800));
-          if (intel.match(/\d+/)) setPeopleAffected(intel.match(/\d+/)![0]);
+          setScanStatus('SYNTHESIZED');
+          const intel = res.analysis || {};
+          if (intel.detected_location) setLocationName(intel.detected_location);
+          if (intel.detected_casualties) setPeopleAffected(String(intel.detected_casualties));
+          setDescription(prev => (prev ? prev + "\n\n" : "") + "[NEURAL_INTEL]: Document scanned. " + (res.raw_text?.slice(0, 500) || ""));
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
       setScanning(false);
@@ -102,6 +106,50 @@ export default function TacticalHybrid() {
     }
   };
 
+  const startRecording = async () => {
+    try {
+      await Audio.requestPermissionsAsync();
+      await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
+      const { recording } = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+      setRecording(recording);
+      setIsRecording(true);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    } catch (err) { console.error('Failed to start recording', err); }
+  };
+
+  const stopRecording = async () => {
+    if (!recording) return;
+    setIsRecording(false);
+    await recording.stopAndUnloadAsync();
+    const uri = recording.getURI();
+    setRecording(null);
+    if (uri) {
+        setScanStatus('VOICE_SYNCING...');
+        setScanning(true);
+        const res = await mapAPI.scanVoice({ uri, name: 'sitrep.m4a', type: 'audio/m4a' });
+        if (res.success) {
+            setDescription(prev => (prev ? prev + "\n\n" : "") + "[VOICE_SITREP]: " + res.intelligence.summary);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }
+        setScanning(false);
+    }
+  };
+
+  const runStrategicReplan = async () => {
+    if (!description) return Alert.alert("INTEL_REQUIRED", "Please provide mission debrief for replan.");
+    setScanning(true);
+    setScanStatus('REPLANNING...');
+    try {
+       const res = await analyzeAPI.replan({ description, severity, location: locationName }, description);
+       if (res.success) {
+           setDescription(prev => (prev ? prev + "\n\n" : "") + "[STRATEGIC_REPLAN]: " + res.executive_summary);
+           setSeverity('high'); // Force high priority for bypass plans
+           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+       }
+    } catch (e) {}
+    setScanning(false);
+  };
+
   const goAnalysis = () => {
     if (!description && !file) {
       Alert.alert('DATA_REQUIRED', 'Intelligence link requires documentation or a situation report.');
@@ -115,7 +163,8 @@ export default function TacticalHybrid() {
 
   return (
     <View style={s.container}>
-      <LinearGradient colors={['#02050A', '#050A19', '#081033']} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={['#ebfbedff', '#cafbc1ff']} style={StyleSheet.absoluteFill} />
+      <Image source={require('../../assets/images/bg-pattern.jpg')} style={[StyleSheet.absoluteFill, { opacity: 0.12 }]} resizeMode="cover" />
       
       <View style={s.header}>
         <View>
@@ -147,7 +196,7 @@ export default function TacticalHybrid() {
                 value={description} 
                 onChangeText={setDescription}
                 placeholder="Sector Delta experiencing breach. Tactical dispatch required..."
-                placeholderTextColor="rgba(255,255,255,0.2)"
+                placeholderTextColor="rgba(0,0,0,0.2)"
               />
           </View>
         </View>
@@ -177,20 +226,33 @@ export default function TacticalHybrid() {
                 <Text style={s.assetBtnText}>PHOTO RECON</Text>
                 {image && <View style={s.checkBadge}><CheckCircle2 size={10} color="#FFF" /></View>}
              </TouchableOpacity>
-             <TouchableOpacity style={s.assetBtn}>
-                <Mic color={DESIGN.textMuted} size={28} />
-                <Text style={s.assetBtnText}>VOICE_NET</Text>
-             </TouchableOpacity>
+              <TouchableOpacity 
+                style={[s.assetBtn, isRecording && { backgroundColor: DESIGN.danger + '10', borderColor: DESIGN.danger }]} 
+                onPressIn={startRecording}
+                onPressOut={stopRecording}
+              >
+                <Mic color={isRecording ? DESIGN.danger : (voiceUri ? DESIGN.primary : DESIGN.textMuted)} size={28} />
+                <Text style={[s.assetBtnText, isRecording && { color: DESIGN.danger }]}>{isRecording ? 'RECORDING...' : 'VOICE_NET'}</Text>
+              </TouchableOpacity>
           </View>
         </View>
 
         {/* SECTION: CORE TRIGGER (CLASSIC GRADIENT) */}
-        <TouchableOpacity style={s.launchBtn} onPress={goAnalysis}>
-           <LinearGradient colors={[DESIGN.danger, '#C1870B']} start={{x:0, y:0}} end={{x:1, y:1}} style={s.launchInner}>
-              <Scan color="#FFF" size={26} />
-              <Text style={s.launchText}>INITIATE NEURAL SYNTHESIS</Text>
-           </LinearGradient>
-        </TouchableOpacity>
+        <View style={s.actionRow}>
+           <TouchableOpacity style={[s.launchBtn, { flex: 1.5 }]} onPress={goAnalysis}>
+              <LinearGradient colors={[DESIGN.primary, '#2E7D32']} start={{x:0, y:0}} end={{x:1, y:1}} style={s.launchInner}>
+                 <Scan color="#FFF" size={20} />
+                 <Text style={s.launchText}>SYNTHESIZE</Text>
+              </LinearGradient>
+           </TouchableOpacity>
+
+           <TouchableOpacity style={[s.launchBtn, { flex: 1, backgroundColor: '#000' }]} onPress={runStrategicReplan}>
+              <View style={[s.launchInner, { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: '#D4AF37' }]}>
+                 <Zap color="#D4AF37" size={20} />
+                 <Text style={[s.launchText, { color: '#D4AF37' }]}>REPLAN</Text>
+              </View>
+           </TouchableOpacity>
+        </View>
 
         <View style={{ height: 120 }} />
       </ScrollView>
@@ -201,19 +263,19 @@ export default function TacticalHybrid() {
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#02050A' },
   header: { paddingTop: 60, paddingHorizontal: 30, paddingBottom: 25, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  headerTitle: { fontFamily: DESIGN.fontDisplayBlack, color: '#FFF', fontSize: 24, letterSpacing: 2 },
-  headerSub: { fontFamily: DESIGN.fontLabelSemiBold, color: DESIGN.textMuted, fontSize: 9, letterSpacing: 1, marginTop: 4 },
-  refreshCircle: { width: 54, height: 54, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.02)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
+  headerTitle: { fontFamily: DESIGN.fontDisplayBlack, color: '#1E2F23', fontSize: 24, letterSpacing: 2 },
+  headerSub: { fontFamily: DESIGN.fontLabelSemiBold, color: '#000000', fontSize: 9, letterSpacing: 1, marginTop: 4, opacity: 0.6 },
+  refreshCircle: { width: 54, height: 54, borderRadius: 18, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' },
 
   scroll: { paddingHorizontal: 24, paddingTop: 10 },
   section: { marginBottom: 32 },
-  sectionLabel: { fontFamily: DESIGN.fontLabelSemiBold, color: 'rgba(255,255,255,0.3)', fontSize: 9, letterSpacing: 1.5, marginBottom: 12 },
+  sectionLabel: { fontFamily: DESIGN.fontLabelSemiBold, color: '#000000', fontSize: 10, letterSpacing: 1.5, marginBottom: 12, opacity: 0.8 },
   
-  classicInputBox: { height: 72, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.02)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)', paddingHorizontal: 20, justifyContent: 'center' },
-  classicInput: { fontFamily: DESIGN.fontDisplayBlack, color: '#FFF', fontSize: 22 },
+  classicInputBox: { height: 72, borderRadius: 22, backgroundColor: '#FFF', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)', paddingHorizontal: 20, justifyContent: 'center' },
+  classicInput: { fontFamily: DESIGN.fontDisplayBlack, color: '#1E2F23', fontSize: 22 },
 
   classicTextAreaBox: { height: 140, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.01)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)', padding: 20 },
-  textArea: { fontFamily: DESIGN.fontBold, color: 'rgba(255,255,255,0.8)', fontSize: 15, height: '100%', textAlignVertical: 'top' },
+  textArea: { fontFamily: DESIGN.fontBold, color: '#000000', fontSize: 15, height: '100%', textAlignVertical: 'top' },
 
   assetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   liveBadge: { flexDirection: 'row', alignItems: 'center', gap: 6 },
@@ -223,12 +285,13 @@ const s = StyleSheet.create({
   progressBar: { height: '100%', backgroundColor: DESIGN.primary },
 
   assetGrid: { flexDirection: 'row', gap: 12 },
-  assetBtn: { flex: 1, height: 90, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.02)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  assetBtn: { flex: 1, height: 90, borderRadius: 22, backgroundColor: '#FFF', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center', gap: 8 },
   assetBtnSynced: { borderColor: DESIGN.primary + '40', backgroundColor: DESIGN.primary + '05' },
-  assetBtnText: { fontFamily: DESIGN.fontDisplayBlack, color: 'rgba(255,255,255,0.4)', fontSize: 7, letterSpacing: 1 },
+  assetBtnText: { fontFamily: DESIGN.fontDisplayBlack, color: '#000000', fontSize: 8, letterSpacing: 1, opacity: 0.7 },
   checkBadge: { position: 'absolute', top: 10, right: 10, backgroundColor: DESIGN.success, width: 16, height: 16, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
 
-  launchBtn: { height: 72, borderRadius: 24, overflow: 'hidden', marginVertical: 15, marginBottom: 20 },
-  launchInner: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 15, paddingHorizontal: 20 },
-  launchText: { fontFamily: DESIGN.fontDisplay, color: '#FFF', fontSize: 13, letterSpacing: 2 },
+  actionRow: { flexDirection: 'row', gap: 12, marginVertical: 15, marginBottom: 20 },
+  launchBtn: { height: 60, borderRadius: 20, overflow: 'hidden' },
+  launchInner: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 15 },
+  launchText: { fontFamily: DESIGN.fontDisplay, color: '#FFF', fontSize: 13, letterSpacing: 1.5 },
 });

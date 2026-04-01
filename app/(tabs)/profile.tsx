@@ -97,7 +97,8 @@ export default function TacticalProfile() {
 
   return (
     <View style={s.container}>
-      <LinearGradient colors={['#05080A', '#020508']} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={['#ebfbedff', '#cafbc1ff']} style={StyleSheet.absoluteFill} />
+      <Image source={require('../../assets/images/bg-pattern.jpg')} style={[StyleSheet.absoluteFill, { opacity: 0.12 }]} resizeMode="cover" />
       
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
         
@@ -232,7 +233,7 @@ export default function TacticalProfile() {
 
         {/* SERVICE TIER BANNERS */}
         <View style={s.tierSection}>
-           <LinearGradient colors={['#1A1A1A', '#101010']} style={s.tierBanner}>
+           <LinearGradient colors={['#FFF', '#F0F0F0']} style={s.tierBanner}>
               <View style={s.tierInfo}>
                  <Text style={s.tierTitle}>PLAN: TACTICAL_ULTIMATE</Text>
                  <Text style={s.tierSub}>ALL SATELLITE LINKS ACTIVE • P2P UNLIMITED</Text>
@@ -276,41 +277,41 @@ function SettingRow({ icon: Icon, label, sub, right, onPress }: any) {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#05080A' },
+  container: { flex: 1, backgroundColor: '#ebfbedff' },
   scroll: { padding: 24, paddingTop: 80 },
   
   profileHeader: { alignItems: 'center', marginBottom: 40 },
   avatarGroup: { position: 'relative', marginBottom: 20 },
-  avatarRing: { width: 100, height: 100, borderRadius: 50, padding: 3, backgroundColor: 'rgba(255,255,255,0.05)' },
+  avatarRing: { width: 100, height: 100, borderRadius: 50, padding: 3, backgroundColor: '#FFF' },
   avatarGradient: { flex: 1, borderRadius: 47, padding: 2 },
-  avatarInner: { flex: 1, borderRadius: 45, backgroundColor: '#05080A', alignItems: 'center', justifyContent: 'center' },
-  statusBadge: { position: 'absolute', bottom: 4, right: 4, width: 20, height: 20, borderRadius: 10, backgroundColor: '#05080A', alignItems: 'center', justifyContent: 'center' },
+  avatarInner: { flex: 1, borderRadius: 45, backgroundColor: '#ebfbedff', alignItems: 'center', justifyContent: 'center' },
+  statusBadge: { position: 'absolute', bottom: 4, right: 4, width: 20, height: 20, borderRadius: 10, backgroundColor: '#ebfbedff', alignItems: 'center', justifyContent: 'center' },
   statusDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: DESIGN.success },
   
-  operatorName: { fontFamily: DESIGN.fontDisplayBlack, color: '#FFF', fontSize: 24, letterSpacing: 2 },
-  roleChip: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.03)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20, marginTop: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
+  operatorName: { fontFamily: DESIGN.fontDisplayBlack, color: '#1E2F23', fontSize: 24, letterSpacing: 2 },
+  roleChip: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#FFF', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20, marginTop: 10, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' },
   roleText: { fontFamily: DESIGN.fontLabelSemiBold, color: DESIGN.primary, fontSize: 8, letterSpacing: 1.5 },
 
   statsGrid: { flexDirection: 'row', gap: 12, marginBottom: 40 },
-  statCard: { flex: 1, padding: 16, borderRadius: 24, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.03)', backgroundColor: 'rgba(255,255,255,0.02)' },
-  statValue: { fontFamily: DESIGN.fontDisplayBlack, color: '#FFF', fontSize: 18, marginVertical: 6 },
-  statLabel: { fontFamily: DESIGN.fontLabelSemiBold, color: '#444', fontSize: 7, textAlign: 'center' },
+  statCard: { flex: 1, padding: 16, borderRadius: 24, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.03)', backgroundColor: '#FFF' },
+  statValue: { fontFamily: DESIGN.fontDisplayBlack, color: '#1E2F23', fontSize: 18, marginVertical: 6 },
+  statLabel: { fontFamily: DESIGN.fontLabelSemiBold, color: '#B0BEC5', fontSize: 7, textAlign: 'center' },
 
   section: { marginBottom: 32 },
   sectionTitle: { fontFamily: DESIGN.fontDisplayBlack, color: '#333', fontSize: 10, letterSpacing: 2, marginBottom: 16, marginLeft: 4 },
-  card: { borderRadius: 28, backgroundColor: 'rgba(255,255,255,0.03)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', overflow: 'hidden' },
+  card: { borderRadius: 28, backgroundColor: '#FFF', borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)', overflow: 'hidden' },
   settingRow: { padding: 20, flexDirection: 'row', alignItems: 'center', gap: 16 },
-  settingIconShell: { width: 44, height: 44, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.02)', alignItems: 'center', justifyContent: 'center' },
+  settingIconShell: { width: 44, height: 44, borderRadius: 14, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center' },
   settingTextShell: { flex: 1 },
-  settingLabel: { fontFamily: DESIGN.fontBold, color: '#FFF', fontSize: 14 },
-  settingSub: { fontFamily: DESIGN.fontBody, color: '#555', fontSize: 11, marginTop: 2 },
-  divider: { height: 1, backgroundColor: 'rgba(255,255,255,0.05)', marginHorizontal: 20 },
+  settingLabel: { fontFamily: DESIGN.fontBold, color: '#1E2F23', fontSize: 14 },
+  settingSub: { fontFamily: DESIGN.fontBody, color: '#90A4AE', fontSize: 11, marginTop: 2 },
+  divider: { height: 1, backgroundColor: '#FFF', marginHorizontal: 20 },
 
   tierSection: { marginBottom: 40 },
   tierBanner: { padding: 24, borderRadius: 28, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: '#D4AF37' + '40' },
   tierInfo: { gap: 4 },
   tierTitle: { fontFamily: DESIGN.fontDisplayBlack, color: '#D4AF37', fontSize: 13, letterSpacing: 1 },
-  tierSub: { fontFamily: DESIGN.fontLabelSemiBold, color: '#555', fontSize: 8 },
+  tierSub: { fontFamily: DESIGN.fontLabelSemiBold, color: '#90A4AE', fontSize: 8 },
   tierBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#D4AF37' + '20', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
   tierBadgeText: { fontFamily: DESIGN.fontDisplayBlack, color: '#D4AF37', fontSize: 9 },
 
@@ -319,15 +320,15 @@ const s = StyleSheet.create({
 
   footer: { alignItems: 'center', gap: 6 },
   versionText: { fontFamily: DESIGN.fontLabel, color: '#222', fontSize: 9, letterSpacing: 1 },
-  legalText: { fontFamily: DESIGN.fontLabelSemiBold, color: '#444', fontSize: 7, letterSpacing: 2 },
+  legalText: { fontFamily: DESIGN.fontLabelSemiBold, color: '#B0BEC5', fontSize: 7, letterSpacing: 2 },
 
   bloodGrid: { flexDirection: 'row', gap: 6, marginTop: 10 },
-  bloodChip: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.05)' },
+  bloodChip: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, backgroundColor: '#FFF' },
   bloodChipActive: { backgroundColor: 'rgba(225,29,72,0.15)', borderWidth: 1, borderColor: DESIGN.danger },
-  bloodText: { color: '#666', fontSize: 11, fontFamily: DESIGN.fontBold },
+  bloodText: { color: '#90A4AE', fontSize: 11, fontFamily: DESIGN.fontBold },
   bloodTextActive: { color: DESIGN.danger },
 
-  textInput: { color: '#FFF', fontSize: 13, fontFamily: DESIGN.fontBody, marginTop: 5, paddingVertical: 5, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.1)' },
+  textInput: { color: '#1E2F23', fontSize: 13, fontFamily: DESIGN.fontBody, marginTop: 5, paddingVertical: 5, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.1)' },
   
   testSOSBtn: { backgroundColor: DESIGN.success, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, gap: 10 },
   testSOSText: { color: '#000', fontFamily: DESIGN.fontDisplayBlack, fontSize: 12, letterSpacing: 1 }

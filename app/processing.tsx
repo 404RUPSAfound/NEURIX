@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, Dimensions, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, StyleSheet, Animated, Dimensions, ActivityIndicator, Platform, Image } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -135,13 +135,14 @@ export default function Processing() {
 
     } catch (error) {
       addLog('SYSTEM_FAILURE::INIT_RECOVERY');
-      setTimeout(() => router.back(), 3000);
+       setTimeout(() => router.canGoBack() ? router.back() : router.replace('/(tabs)'), 3000);
     }
   };
 
   return (
     <View style={s.container}>
-      <LinearGradient colors={['#020408', '#050810', '#0A0E1A']} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={['#ebfbedff', '#cafbc1ff']} style={StyleSheet.absoluteFill} />
+      <Image source={require('../assets/images/bg-pattern.jpg')} style={[StyleSheet.absoluteFill, { opacity: 0.12 }]} resizeMode="cover" />
       
       {/* HUD Scanner Grid */}
       <View style={s.gridContainer}>
@@ -161,7 +162,7 @@ export default function Processing() {
 
         <View style={s.HUD}>
           <View style={s.statusHeader}>
-             <Zap size={14} color={DESIGN.primary} />
+             <Zap size={14} color="#FFFFFF" />
              <Text style={s.statusTitle}>NEURAL_SYNTHESIS_ACTIVE</Text>
           </View>
           
@@ -175,17 +176,17 @@ export default function Processing() {
 
           <View style={s.footerHUD}>
              <View style={s.footerItem}>
-                <Shield size={12} color={DESIGN.success} />
+                <Shield size={12} color="#FFFFFF" />
                 <Text style={s.footerText}>SECURE_LINK</Text>
              </View>
              <View style={s.footerDivider} />
              <View style={s.footerItem}>
-                <Terminal size={12} color={DESIGN.info} />
+                <Terminal size={12} color="#FFFFFF" />
                 <Text style={s.footerText}>OS_v4.0.2</Text>
              </View>
              <View style={s.footerDivider} />
              <View style={s.footerItem}>
-                <ActivityIndicator size="small" color={DESIGN.primary} style={{ transform: [{ scale: 0.6 }] }} />
+                <ActivityIndicator size="small" color="#FFFFFF" style={{ transform: [{ scale: 0.6 }] }} />
                 <Text style={s.footerText}>PROCESSING</Text>
              </View>
           </View>
@@ -202,18 +203,26 @@ const s = StyleSheet.create({
   scanLine: { position: 'absolute', height: 100, width: '100%', backgroundColor: DESIGN.primary + '10', borderBottomWidth: 2, borderBottomColor: DESIGN.primary, opacity: 0.5 },
   
   main: { flex: 1, justifyContent: 'center', padding: 24, gap: 40 },
-  brainContainer: { width: 120, height: 120, borderRadius: 60, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: DESIGN.primary + '40', backgroundColor: DESIGN.primary + '05', shadowColor: DESIGN.primary, shadowRadius: 30, shadowOpacity: 0.3 },
+  brainContainer: { 
+    width: 120, height: 120, borderRadius: 60, alignItems: 'center', justifyContent: 'center', 
+    borderWidth: 1, borderColor: DESIGN.primary + '40', backgroundColor: DESIGN.primary + '05',
+    ...Platform.select({
+      web: { boxShadow: `0px 0px 30px ${DESIGN.primary}` },
+      default: { shadowColor: DESIGN.primary, shadowRadius: 30, shadowOpacity: 0.3 }
+    })
+  },
   
-  HUD: { backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 32, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', padding: 24, gap: 20 },
-  statusHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)', paddingBottom: 15 },
-  statusTitle: { fontFamily: DESIGN.fontDisplayBlack, color: '#FFF', fontSize: 16, letterSpacing: 1 },
+  HUD: { backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 32, borderWidth: 1, borderColor: 'rgba(0,0,0,0.1)', padding: 24, gap: 20 },
+  statusHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.05)', paddingBottom: 15 },
+  confirmText: { fontFamily: DESIGN.fontDisplay, color: '#FFFFFF', fontSize: 14, letterSpacing: 1 },
+  statusTitle: { fontFamily: DESIGN.fontDisplayBlack, color: '#FFFFFF', fontSize: 18, letterSpacing: 1 },
   
   logWindow: { height: 180, gap: 8 },
   logRow: { flexDirection: 'row', alignItems: 'center' },
-  logText: { fontFamily: DESIGN.fontLabelSemiBold, color: DESIGN.primary, fontSize: 11, letterSpacing: 0.5 },
+  logText: { fontFamily: DESIGN.fontLabelSemiBold, color: '#FFFFFF', fontSize: 15, letterSpacing: 0.5 },
   
   footerHUD: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, paddingTop: 15, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)' },
   footerItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  footerText: { fontFamily: DESIGN.fontLabelSemiBold, color: DESIGN.textMuted, fontSize: 9, letterSpacing: 1 },
+  footerText: { fontFamily: DESIGN.fontLabelSemiBold, color: '#FFFFFF', fontSize: 9, letterSpacing: 1, opacity: 0.8 },
   footerDivider: { width: 1, height: 12, backgroundColor: 'rgba(255,255,255,0.1)' }
 });

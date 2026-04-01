@@ -100,3 +100,6 @@ export const getLocalTileUrl = async (z: number, x: number, y: number): Promise<
      return null;
   }
 };
+export default function OfflineMapsModule() {
+  return null;
+}

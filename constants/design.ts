@@ -15,12 +15,12 @@ export const DESIGN = {
   gradientStart: '#000000',
   gradientMid: '#0A0A0E',
   gradientEnd: '#0F111A',
-  accentGradient: ['#E11D48', '#9F1239'] as const, // Crimson to Deep Red
+  accentGradient: ['#1E2F23', '#0F1A12'] as const, // Deep Green to Dark Green
   goldGradient: ['#F59E0B', '#D97706'] as const,    // Amber to Gold
 
   // ── Accents (Tactical High-Visibility) ───────────────────────────
-  primary: '#E11D48',           // Crimson Red
-  primaryDeep: '#9F1239',
+  primary: '#1E2F23',           // Deep Tactical Green
+  primaryDeep: '#0F1A12',
   secondary: '#F59E0B',         // Amber Gold
   secondaryDeep: '#D97706',
   accent: '#F9FAFB',            // Cold White
@@ -31,7 +31,7 @@ export const DESIGN = {
   danger: '#EF4444',            // Rose
   info: '#3B82F6',              // Azure
   
-  critical: '#E11D48',          // Same as primary
+  critical: '#1E2F23',          // Same as primary
   high: '#F97316',              // Orange
   medium: '#F59E0B',            // Amber
   low: '#10B981',               // Emerald
@@ -40,14 +40,14 @@ export const DESIGN = {
   textPrimary: '#FFFFFF',
   textSecondary: '#A3A3A3',     // Neutral Gray
   textMuted: '#525252',         // Deep Gray
-  textAccent: '#E11D48',        // Crimson
+  textAccent: '#1E2F23',        // Deep Green
   textGold: '#F59E0B',          // Gold
 
   // ── Borders & Glass ───────────────────────────────────────────────
   borderSubtle: 'rgba(255, 255, 255, 0.04)',
   borderDefault: 'rgba(255, 255, 255, 0.08)',
-  borderStrong: 'rgba(225, 29, 72, 0.3)', // Crimson Tinted
-  borderGlow: 'rgba(225, 29, 72, 0.5)',
+  borderStrong: 'rgba(30, 47, 35, 0.3)', // Deep Green Tinted
+  borderGlow: 'rgba(30, 47, 35, 0.5)',
   glassIntensity: 50,
 
   // ── Metrics & Radius ─────────────────────────────────────────────

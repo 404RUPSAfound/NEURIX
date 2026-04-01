@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Dimensions } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Dimensions, Image } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -32,10 +32,11 @@ export default function AnalysisDetailScreen() {
 
   return (
     <View style={s.container}>
-      <LinearGradient colors={[DESIGN.bg, DESIGN.bgSurface]} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={['#ebfbedff', '#cafbc1ff']} style={StyleSheet.absoluteFill} />
+      <Image source={require('../assets/images/bg-pattern.jpg')} style={[StyleSheet.absoluteFill, { opacity: 0.12 }]} resizeMode="cover" />
       
       <View style={s.header}>
-        <TouchableOpacity style={s.backBtn} onPress={() => router.back()}>
+        <TouchableOpacity style={s.backBtn} onPress={() => router.canGoBack() ? router.back() : router.push('/(tabs)')}>
           <ArrowLeft color={DESIGN.textPrimary} size={20} />
         </TouchableOpacity>
         <Text style={s.headerTitle}>MISSION PARAMETERS</Text>
@@ -85,17 +86,17 @@ export default function AnalysisDetailScreen() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: DESIGN.bg },
-  loadCenter: { flex: 1, backgroundColor: DESIGN.bg, alignItems: 'center', justifyContent: 'center' },
-  header: { paddingTop: 60, paddingHorizontal: 24, paddingBottom: 20, flexDirection: 'row', alignItems: 'center', gap: 20, borderBottomWidth: 1, borderBottomColor: DESIGN.borderSubtle },
-  backBtn: { padding: 10, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 12 },
-  headerTitle: { fontFamily: DESIGN.fontDisplayBlack, color: DESIGN.textPrimary, fontSize: 18, letterSpacing: 2 },
+  container: { flex: 1, backgroundColor: '#ebfbedff' },
+  loadCenter: { flex: 1, backgroundColor: '#ebfbedff', alignItems: 'center', justifyContent: 'center' },
+  header: { paddingTop: 60, paddingHorizontal: 24, paddingBottom: 20, flexDirection: 'row', alignItems: 'center', gap: 20, borderBottomWidth: 1, borderBottomColor: 'rgba(30, 47, 35, 0.1)' },
+  backBtn: { padding: 10, backgroundColor: '#FFF', borderRadius: 12 },
+  headerTitle: { fontFamily: DESIGN.fontDisplayBlack, color: '#1E2F23', fontSize: 18, letterSpacing: 2 },
   
   scroll: { padding: 24, paddingBottom: 100 },
-  sectionHeader: { marginTop: 32, marginBottom: 16, borderLeftWidth: 3, borderLeftColor: DESIGN.primary, paddingLeft: 12 },
-  sectionTitle: { fontFamily: DESIGN.fontLabelSemiBold, color: DESIGN.textMuted, fontSize: 11, letterSpacing: 2 },
+  sectionHeader: { marginTop: 32, marginBottom: 16, borderLeftWidth: 3, borderLeftColor: '#1E2F23', paddingLeft: 12 },
+  sectionTitle: { fontFamily: DESIGN.fontLabelSemiBold, color: '#1E2F23', fontSize: 11, letterSpacing: 2 },
   
   confirmBtn: { borderRadius: 20, overflow: 'hidden', marginTop: 40 },
   confirmGradient: { paddingVertical: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12 },
-  confirmText: { fontFamily: DESIGN.fontDisplay, color: '#FFF', fontSize: 14, letterSpacing: 1 },
+  confirmText: { fontFamily: DESIGN.fontDisplay, color: '#1E2F23', fontSize: 14, letterSpacing: 1 },
 });

@@ -255,7 +255,7 @@ export default function NativeReconCommand() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+  container: { flex: 1, backgroundColor: '#ebfbedff' },
   map: { ...StyleSheet.absoluteFillObject },
   scanLine: { position: 'absolute', left: 0, right: 0, height: 100, zIndex: 5 },
   markerContainer: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, backgroundColor: 'rgba(0,0,0,0.8)', alignItems: 'center', justifyContent: 'center' },
@@ -264,19 +264,19 @@ const styles = StyleSheet.create({
   unitLabel: { backgroundColor: 'rgba(0,0,0,0.7)', paddingHorizontal: 4, paddingVertical: 1, borderRadius: 4, marginTop: 2 },
   unitText: { fontFamily: DESIGN.fontBold, color: '#00E676', fontSize: 7 },
   topHud: { position: 'absolute', top: 50, left: 16, right: 16, zIndex: 20 },
-  hudBlur: { flexDirection: 'row', padding: 16, borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', overflow: 'hidden' },
+  hudBlur: { flexDirection: 'row', padding: 16, borderRadius: 24, borderWidth: 1, borderColor: 'rgba(0,0,0,0.1)', overflow: 'hidden' },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-  hudTitle: { fontFamily: DESIGN.fontBlack, color: '#FFF', fontSize: 13, letterSpacing: 1.5 },
+  hudTitle: { fontFamily: DESIGN.fontBlack, color: '#1E2F23', fontSize: 13, letterSpacing: 1.5 },
   hudStatus: { fontFamily: DESIGN.fontMedium, color: DESIGN.primary, fontSize: 9 },
-  syncBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.03)', alignItems: 'center', justifyContent: 'center' },
+  syncBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center' },
   sideHud: { position: 'absolute', right: 16, top: height * 0.3, zIndex: 20, gap: 12 },
-  sideBtn: { width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.1)' },
+  sideBtn: { width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: 'rgba(0,0,0,0.1)' },
   intelWrapper: { position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 100 },
   intelCard: { borderTopLeftRadius: 36, borderTopRightRadius: 36, padding: 24, paddingBottom: 48, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.15)', overflow: 'hidden' },
   cardIndicator: { width: 40, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.2)', alignSelf: 'center', marginBottom: 24 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 },
   cardCat: { fontFamily: DESIGN.fontBold, color: DESIGN.primary, fontSize: 10, letterSpacing: 2 },
-  cardTitle: { fontFamily: DESIGN.fontBlack, color: '#FFF', fontSize: 20 },
+  cardTitle: { fontFamily: DESIGN.fontBlack, color: '#1E2F23', fontSize: 20 },
   mainAction: { height: 60, borderRadius: 18, backgroundColor: DESIGN.primary, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12 },
   mainActionText: { fontFamily: DESIGN.fontBlack, color: '#000', fontSize: 14, letterSpacing: 1 }
 });

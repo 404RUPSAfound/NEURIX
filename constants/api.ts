@@ -10,7 +10,7 @@ const LAN_HOST = '192.168.1.100';
 const USE_DEVICE_LAN = false;
 
 export const API_BASE_URL = USE_DEVICE_LAN
-  ? `http://${LAN_HOST}:8001`
+  ? `http://${LAN_HOST}:8000`
   : Platform.OS === 'android'
-    ? 'http://10.0.2.2:8001'
-    : 'http://localhost:8001';
+    ? 'http://10.0.2.2:8000'
+    : 'http://localhost:8000';

@@ -14,9 +14,9 @@ const MOCK_PATH = path.resolve(__dirname, "constants/maps-mock.js");
 
 finalConfig.resolver.resolveRequest = (context, moduleName, platform) => {
   if (platform === 'web' && moduleName === 'react-native-maps') {
-    // If we are already trying to resolve the mock path itself, don't redirect again!
+    // 🛡️ OBSIDIAN SHIELD: Prevent infinite loop if already targeting mock
     if (context.originModulePath === MOCK_PATH) {
-      return context.resolveRequest(context, moduleName, platform);
+      return { type: "sourceFile", filePath: MOCK_PATH };
     }
     return {
       type: "sourceFile",

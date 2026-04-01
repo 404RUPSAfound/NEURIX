@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Animated, Alert, ActivityIndicator, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Animated, Alert, ActivityIndicator, Modal, Image as RNImage } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { 
@@ -13,7 +13,7 @@ import { DESIGN } from '@/constants/design';
 import { analyzeAPI, mapAPI } from '@/Store/api';
 import * as Haptics from 'expo-haptics';
 import * as Location from 'expo-location';
-import { Dimensions, Image as RNImage } from 'react-native';
+import { Dimensions } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
 
 const { width } = Dimensions.get('window');
@@ -82,8 +82,8 @@ export default function TacticalChat() {
      if (isVoiceActive) {
        Animated.loop(
          Animated.sequence([
-           Animated.timing(pulseAnim, { toValue: 1.4, duration: 800, useNativeDriver: true }),
-           Animated.timing(pulseAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
+           Animated.timing(pulseAnim, { toValue: 1.4, duration: 800, useNativeDriver: Platform.OS !== 'web' }),
+           Animated.timing(pulseAnim, { toValue: 1, duration: 800, useNativeDriver: Platform.OS !== 'web' }),
          ])
        ).start();
      } else {
@@ -151,7 +151,8 @@ export default function TacticalChat() {
             role: m.role === 'bot' ? 'assistant' : 'user',
             text: m.text || ''
           }));
-          const res = await analyzeAPI.chat(userMsg, sanitizedHistory);
+          const locPayload = location ? { lat: location.coords.latitude, lon: location.coords.longitude } : undefined;
+          const res = await analyzeAPI.chat(userMsg, sanitizedHistory, locPayload);
           if (res?.success) {
              setMessages(prev => [...prev, { role: 'bot', text: res.reply || res.response, time: 'MISSION_TIME' }]);
           }
@@ -169,7 +170,8 @@ export default function TacticalChat() {
 
   return (
     <View style={s.container}>
-      <LinearGradient colors={['#05080A', '#020508']} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={['#ebfbedff', '#cafbc1ff']} style={StyleSheet.absoluteFill} />
+      <RNImage source={require('../../assets/images/bg-pattern.jpg')} style={[StyleSheet.absoluteFill, { opacity: 0.12 }]} resizeMode="cover" />
       
       {/* ELITE HUD HEADER */}
       <View style={s.header}>
@@ -353,7 +355,7 @@ function AssessmentCard({ data }: { data: any }) {
 
   return (
     <View style={s.assessContainer}>
-       <LinearGradient colors={['#10141A', '#05080A']} style={s.assessCard}>
+       <LinearGradient colors={['#ebfbedff', '#cafbc1ff']} style={s.assessCard}>
           <View style={s.assessHdr}>
              <View style={s.assessTag}>
                 <Radio size={12} color={DESIGN.danger} />
@@ -454,25 +456,25 @@ function IntelCard({ imageUri, location }: { imageUri: string, location?: Locati
 // ── Styles ───────────────────────────────────────────────────────────
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#05080A' },
-  header: { paddingTop: 60, paddingHorizontal: 24, paddingBottom: 20, flexDirection: 'row', alignItems: 'center', gap: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
+  container: { flex: 1, backgroundColor: '#ebfbedff' },
+  header: { paddingTop: 60, paddingHorizontal: 24, paddingBottom: 20, flexDirection: 'row', alignItems: 'center', gap: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.05)' },
   hdrText: { flex: 1 },
-  hdrTitle: { fontFamily: DESIGN.fontDisplayBlack, color: '#FFF', fontSize: 13, letterSpacing: 2 },
+  hdrTitle: { fontFamily: DESIGN.fontDisplayBlack, color: '#1E2F23', fontSize: 13, letterSpacing: 2 },
   hdrStatusRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
   statusDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: DESIGN.success },
-  hdrSub: { fontFamily: DESIGN.fontLabelSemiBold, color: '#555', fontSize: 8, letterSpacing: 1 },
-  badge: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.05)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+  hdrSub: { fontFamily: DESIGN.fontLabelSemiBold, color: '#90A4AE', fontSize: 8, letterSpacing: 1 },
+  badge: { width: 40, height: 40, borderRadius: 12, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(0,0,0,0.1)' },
 
   content: { padding: 24, paddingBottom: 40 },
   msgRow: { marginBottom: 24, width: '100%' },
   userRow: { alignItems: 'flex-end' },
   botRow: { alignItems: 'flex-start' },
   
-  bubble: { padding: 18, borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', overflow: 'hidden', maxWidth: width * 0.8 },
+  bubble: { padding: 18, borderRadius: 24, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)', overflow: 'hidden', maxWidth: width * 0.8 },
   userBubble: { backgroundColor: DESIGN.primary + '15', borderBottomRightRadius: 4, borderColor: DESIGN.primary + '30' },
   botBubble: { backgroundColor: 'rgba(20,20,30,0.8)', borderBottomLeftRadius: 4 },
   
-  msgText: { fontFamily: DESIGN.fontBody, color: '#FFF', fontSize: 13, lineHeight: 22 },
+  msgText: { fontFamily: DESIGN.fontBody, color: '#1E2F23', fontSize: 13, lineHeight: 22 },
   msgTime: { fontFamily: DESIGN.fontLabel, color: '#333', fontSize: 8, marginTop: 10, textAlign: 'right' },
 
   sosBlock: { padding: 20, borderRadius: 24, flexDirection: 'row', gap: 16, borderWidth: 2, borderColor: DESIGN.danger, backgroundColor: DESIGN.danger + '10', width: '95%', alignSelf: 'center' },
@@ -483,35 +485,35 @@ const s = StyleSheet.create({
 
   inputFrame: { margin: 24, padding: 8, borderRadius: 28, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'rgba(5,8,10,0.9)' },
   inputBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  input: { flex: 1, color: '#FFF', fontFamily: DESIGN.fontMedium, fontSize: 14 },
+  input: { flex: 1, color: '#1E2F23', fontFamily: DESIGN.fontMedium, fontSize: 14 },
   sendBtn: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
 
   // Assessment Card Styles
   assessContainer: { width: width - 48, alignSelf: 'center' },
-  assessCard: { padding: 24, borderRadius: 32, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', overflow: 'hidden' },
+  assessCard: { padding: 24, borderRadius: 32, borderWidth: 1, borderColor: 'rgba(0,0,0,0.1)', overflow: 'hidden' },
   assessHdr: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   assessTag: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  assessTagText: { fontFamily: DESIGN.fontLabelSemiBold, color: '#AAA', fontSize: 9, letterSpacing: 1.5 },
+  assessTagText: { fontFamily: DESIGN.fontLabelSemiBold, color: '#B0BEC5', fontSize: 9, letterSpacing: 1.5 },
   sevBadge: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 8 },
   sevText: { fontFamily: DESIGN.fontDisplayBlack, fontSize: 9 },
-  assessTitle: { fontFamily: DESIGN.fontDisplayBlack, color: '#FFF', fontSize: 20, letterSpacing: 1, marginBottom: 12 },
+  assessTitle: { fontFamily: DESIGN.fontDisplayBlack, color: '#1E2F23', fontSize: 20, letterSpacing: 1, marginBottom: 12 },
   assessDesc: { fontFamily: DESIGN.fontBody, color: DESIGN.textSecondary, fontSize: 12, lineHeight: 18, marginBottom: 24 },
 
   cardStack: { gap: 12, marginBottom: 24 },
-  actionCard: { padding: 16, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.03)', borderLeftWidth: 4 },
+  actionCard: { padding: 16, borderRadius: 16, backgroundColor: '#FFF', borderLeftWidth: 4 },
   actionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  actionPrio: { fontFamily: DESIGN.fontBold, color: '#FFF', fontSize: 10, opacity: 0.6 },
+  actionPrio: { fontFamily: DESIGN.fontBold, color: '#1E2F23', fontSize: 10, opacity: 0.6 },
   confidenceBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: DESIGN.primary + '10', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 },
   confidenceText: { fontFamily: DESIGN.fontLabelSemiBold, color: DESIGN.primary, fontSize: 8 },
-  actionTitle: { fontFamily: DESIGN.fontBold, color: '#FFF', fontSize: 14, marginBottom: 6 },
-  actionDetail: { fontFamily: DESIGN.fontBody, color: '#7A8C99', fontSize: 11, lineHeight: 16 },
+  actionTitle: { fontFamily: DESIGN.fontBold, color: '#1E2F23', fontSize: 14, marginBottom: 6 },
+  actionDetail: { fontFamily: DESIGN.fontBody, color: '#546E7A', fontSize: 11, lineHeight: 16 },
   actionFooter: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12 },
-  actionTime: { fontFamily: DESIGN.fontLabelSemiBold, color: '#444', fontSize: 8 },
+  actionTime: { fontFamily: DESIGN.fontLabelSemiBold, color: '#B0BEC5', fontSize: 8 },
 
-  resourceGrid: { flexDirection: 'row', justifyContent: 'space-between', padding: 20, backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: 20, marginBottom: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.03)' },
+  resourceGrid: { flexDirection: 'row', justifyContent: 'space-between', padding: 20, backgroundColor: '#FFF', borderRadius: 20, marginBottom: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.03)' },
   resItem: { alignItems: 'center' },
   resVal: { fontFamily: DESIGN.fontDisplayBlack, color: DESIGN.primary, fontSize: 18 },
-  resLabel: { fontFamily: DESIGN.fontLabelSemiBold, color: '#555', fontSize: 7, marginTop: 4 },
+  resLabel: { fontFamily: DESIGN.fontLabelSemiBold, color: '#90A4AE', fontSize: 7, marginTop: 4 },
 
   btnActivate: { height: 54, backgroundColor: DESIGN.primary, borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12 },
   btnActivateText: { fontFamily: DESIGN.fontDisplayBlack, color: '#000', fontSize: 12, letterSpacing: 1 },
@@ -523,8 +525,8 @@ const s = StyleSheet.create({
     padding: 12, 
     borderRadius: 16, 
     borderWidth: 1, 
-    borderColor: 'rgba(255,255,255,0.05)', 
-    backgroundColor: 'rgba(255,255,255,0.02)', 
+    borderColor: 'rgba(0,0,0,0.05)', 
+    backgroundColor: '#FFF', 
     flexDirection: 'row', 
     justifyContent: 'space-between', 
     alignItems: 'center',
@@ -537,7 +539,7 @@ const s = StyleSheet.create({
   },
   teleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   teleItem: { flexDirection: 'row', alignItems: 'center', gap: 6, opacity: 0.8 },
-  teleText: { fontFamily: DESIGN.fontLabelSemiBold, color: '#666', fontSize: 8, letterSpacing: 1 },
+  teleText: { fontFamily: DESIGN.fontLabelSemiBold, color: '#90A4AE', fontSize: 8, letterSpacing: 1 },
   teleDivider: { width: 1, height: 10, backgroundColor: 'rgba(255,255,255,0.1)' },
   teleStatus: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: 'rgba(0,0,0,0.2)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 },
   missionPulse: { width: 6, height: 6, borderRadius: 3, backgroundColor: DESIGN.primary },
@@ -551,26 +553,26 @@ const s = StyleSheet.create({
   waveBar: { width: 6, height: 80, backgroundColor: DESIGN.primary, borderRadius: 3 },
   voiceCaption: { padding: 40, alignItems: 'center' },
   voiceCaptionStatus: { fontFamily: DESIGN.fontLabelSemiBold, color: DESIGN.primary, fontSize: 10, letterSpacing: 2, marginBottom: 20 },
-  voiceStreamText: { fontFamily: DESIGN.fontBody, color: '#AAA', fontSize: 15, textAlign: 'center', fontStyle: 'italic', lineHeight: 24 },
+  voiceStreamText: { fontFamily: DESIGN.fontBody, color: '#B0BEC5', fontSize: 15, textAlign: 'center', fontStyle: 'italic', lineHeight: 24 },
   voiceStopBtn: { marginBottom: 60, height: 60, borderRadius: 30, overflow: 'hidden' },
   voiceStopInner: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  voiceStopText: { fontFamily: DESIGN.fontDisplayBlack, color: '#FFF', fontSize: 12, letterSpacing: 2 },
+  voiceStopText: { fontFamily: DESIGN.fontDisplayBlack, color: '#1E2F23', fontSize: 12, letterSpacing: 2 },
 
   // Intel & Checklist Styles
   intelContainer: { width: width - 48, alignSelf: 'center', marginVertical: 10 },
-  intelCard: { padding: 20, borderRadius: 32, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', overflow: 'hidden' },
+  intelCard: { padding: 20, borderRadius: 32, borderWidth: 1, borderColor: 'rgba(0,0,0,0.1)', overflow: 'hidden' },
   intelHdr: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 15 },
   intelHdrText: { fontFamily: DESIGN.fontLabelSemiBold, color: DESIGN.info, fontSize: 9, letterSpacing: 1.5, flex: 1 },
   liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: DESIGN.danger },
-  intelFrame: { height: 200, borderRadius: 20, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+  intelFrame: { height: 200, borderRadius: 20, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(0,0,0,0.1)' },
   intelImage: { width: '100%', height: '100%' },
   intelOverlay: { ...StyleSheet.absoluteFillObject, padding: 15, justifyContent: 'space-between' },
   crosshair: { width: 40, height: 40, borderLeftWidth: 1, borderTopWidth: 1, borderColor: 'rgba(255,255,255,0.4)', position: 'absolute', top: '50%', left: '50%', marginTop: -20, marginLeft: -20 },
   coordBox: { alignSelf: 'flex-end' },
-  coordText: { fontFamily: DESIGN.fontLabel, color: '#FFF', fontSize: 8 },
+  coordText: { fontFamily: DESIGN.fontLabel, color: '#1E2F23', fontSize: 8 },
   scanStatus: { fontFamily: DESIGN.fontLabelSemiBold, color: DESIGN.primary, fontSize: 7, marginTop: 4 },
   intelCap: { fontFamily: DESIGN.fontBody, color: DESIGN.textSecondary, fontSize: 11, lineHeight: 18, marginTop: 15 },
 
-  checklistHdr: { fontFamily: DESIGN.fontLabelSemiBold, color: '#444', fontSize: 9, letterSpacing: 2, marginBottom: 15, marginTop: 10 },
+  checklistHdr: { fontFamily: DESIGN.fontLabelSemiBold, color: '#B0BEC5', fontSize: 9, letterSpacing: 2, marginBottom: 15, marginTop: 10 },
   checkDot: { width: 14, height: 14, borderRadius: 4, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
 });

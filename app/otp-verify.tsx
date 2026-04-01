@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, Pressable, Animated, ActivityIndicator, Platform, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Pressable, Animated, ActivityIndicator, Platform, Dimensions, Image } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -111,7 +111,8 @@ export default function OTPVerifyScreen() {
 
   return (
     <View style={s.container}>
-      <LinearGradient colors={[DESIGN.bg, DESIGN.bgSurface]} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={['#ebfbedff', '#cafbc1ff']} style={StyleSheet.absoluteFill} />
+      <Image source={require('../assets/images/bg-pattern.jpg')} style={[StyleSheet.absoluteFill, { opacity: 0.12 }]} resizeMode="cover" />
 
       <Animated.View style={[s.content, { opacity: fadeAnim }]}>
         <Pressable style={s.backBtn} onPress={() => router.back()}>
@@ -195,7 +196,7 @@ export default function OTPVerifyScreen() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: DESIGN.bg },
+  container: { flex: 1, backgroundColor: '#ebfbedff' },
   content: { flex: 1, padding: 28, paddingTop: 60, alignItems: 'center' },
   
   backBtn: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, marginBottom: 30 },
@@ -203,7 +204,7 @@ const s = StyleSheet.create({
   
   header: { alignItems: 'center', marginBottom: 40 },
   iconShell: { padding: 20, borderRadius: 24, backgroundColor: 'rgba(225, 29, 72, 0.05)', borderWidth: 1, borderColor: DESIGN.borderStrong, marginBottom: 24 },
-  title: { fontFamily: DESIGN.fontDisplayBlack, fontSize: 32, color: '#FFF', letterSpacing: 4, marginBottom: 12 },
+  title: { fontFamily: DESIGN.fontDisplayBlack, fontSize: 32, color: '#1E2F23', letterSpacing: 4, marginBottom: 12 },
   subtitle: { fontFamily: DESIGN.fontBody, textAlign: 'center', color: DESIGN.textSecondary, fontSize: 13, lineHeight: 22, opacity: 0.8 },
   contactText: { color: DESIGN.primary, fontFamily: DESIGN.fontBold },
   
@@ -212,7 +213,7 @@ const s = StyleSheet.create({
   otpBox: { 
     width: 48, height: 64, borderRadius: 14, borderWidth: 1, 
     borderColor: DESIGN.borderDefault, backgroundColor: 'rgba(255,255,255,0.02)', 
-    textAlign: 'center', fontSize: 24, fontFamily: DESIGN.fontBold, color: '#FFF' 
+    textAlign: 'center', fontSize: 24, fontFamily: DESIGN.fontBold, color: '#1E2F23' 
   },
   otpBoxFilled: { borderColor: DESIGN.primary, backgroundColor: 'rgba(225, 29, 72, 0.05)' },
   
@@ -227,7 +228,7 @@ const s = StyleSheet.create({
   
   verifyBtn: { width: '100%', borderRadius: 18, overflow: 'hidden', marginBottom: 32 },
   verifyGradient: { paddingVertical: 20, alignItems: 'center' },
-  verifyText: { fontFamily: DESIGN.fontBlack, color: '#FFF', fontSize: 14, letterSpacing: 2 },
+  verifyText: { fontFamily: DESIGN.fontBlack, color: '#1E2F23', fontSize: 14, letterSpacing: 2 },
   
   footer: { flexDirection: 'row', alignItems: 'center', gap: 8, opacity: 0.4 },
   footerText: { fontFamily: DESIGN.fontMedium, color: DESIGN.textMuted, fontSize: 8, letterSpacing: 1 },

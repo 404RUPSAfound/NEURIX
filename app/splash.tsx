@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, Dimensions, Platform } from 'react-native';
+import { View, Text, StyleSheet, Animated, Dimensions, Platform, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ShieldCheck, Activity } from 'lucide-react-native';
@@ -45,11 +45,12 @@ export default function SplashScreen() {
 
   return (
     <View style={s.container}>
-      <LinearGradient colors={[DESIGN.bg, DESIGN.bgSurface]} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={['#ebfbedff', '#cafbc1ff']} style={StyleSheet.absoluteFill} />
+      <Image source={require('../assets/images/bg-pattern.jpg')} style={[StyleSheet.absoluteFill, { opacity: 0.12 }]} resizeMode="cover" />
       
       <Animated.View style={[s.center, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
         <View style={s.logoCircle}>
-          <ShieldCheck size={72} color={DESIGN.primary} strokeWidth={1} />
+          <Image source={require('../assets/images/neurix_logo.png')} style={{ width: 140, height: 140, borderRadius: 70 }} resizeMode="cover" />
         </View>
         <Text style={s.brand}>NEURIX</Text>
         <Text style={s.tagline}>TACTICAL INTELLIGENCE NETWORK</Text>
@@ -70,16 +71,16 @@ export default function SplashScreen() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: DESIGN.bg, alignItems: 'center', justifyContent: 'center' },
+  container: { flex: 1, backgroundColor: '#ebfbedff', alignItems: 'center', justifyContent: 'center' },
   center: { alignItems: 'center', zIndex: 10 },
-  logoCircle: { width: 140, height: 140, borderRadius: 70, backgroundColor: 'rgba(255,255,255,0.02)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: DESIGN.borderDefault, marginBottom: 32 },
-  brand: { fontFamily: DESIGN.fontDisplayBlack, color: '#FFF', fontSize: 52, letterSpacing: 8 },
+  logoCircle: { width: 140, height: 140, borderRadius: 70, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: DESIGN.borderDefault, marginBottom: 32 },
+  brand: { fontFamily: DESIGN.fontDisplayBlack, color: '#1E2F23', fontSize: 52, letterSpacing: 8 },
   tagline: { fontFamily: DESIGN.fontLabelSemiBold, color: DESIGN.primary, fontSize: 10, letterSpacing: 4, marginTop: 8 },
   
   loaderContainer: { position: 'absolute', bottom: 80, width: width * 0.7 },
   progressRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   loaderText: { fontFamily: DESIGN.fontLabelSemiBold, color: DESIGN.textMuted, fontSize: 9, letterSpacing: 2 },
-  barBase: { width: '100%', height: 2, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 1 },
+  barBase: { width: '100%', height: 2, backgroundColor: '#FFF', borderRadius: 1 },
   barFill: { height: '100%', backgroundColor: DESIGN.primary },
   status: { fontFamily: DESIGN.fontLabel, color: DESIGN.textMuted, fontSize: 8, marginTop: 12, textAlign: 'center', opacity: 0.5, letterSpacing: 1 },
 });

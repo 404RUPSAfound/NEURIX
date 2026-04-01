@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TextInput, Pressable,
   Animated, KeyboardAvoidingView, Platform, ScrollView,
-  Alert, ActivityIndicator, Dimensions
+  Alert, ActivityIndicator, Dimensions, Image
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -120,7 +120,8 @@ export default function AuthScreen() {
 
   return (
     <View style={s.container}>
-      <LinearGradient colors={[DESIGN.bg, DESIGN.bgSurface]} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={['#ebfbedff', '#cafbc1ff']} style={StyleSheet.absoluteFill} />
+      <Image source={require('../assets/images/bg-pattern.jpg')} style={[StyleSheet.absoluteFill, { opacity: 0.12 }]} resizeMode="cover" />
       
       {/* Background ambient orbs */}
       <View style={s.orb1} />
@@ -297,7 +298,7 @@ export default function AuthScreen() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: DESIGN.bg },
+  container: { flex: 1, backgroundColor: '#ebfbedff' },
   scroll: { flexGrow: 1, justifyContent: 'center', padding: 24, paddingTop: 60 },
   content: { width: '100%', maxWidth: 420, alignSelf: 'center' },
 
@@ -306,24 +307,24 @@ const s = StyleSheet.create({
 
   header: { alignItems: 'center', marginBottom: 40 },
   logoContainer: { padding: 16, borderRadius: 24, backgroundColor: 'rgba(225, 29, 72, 0.05)', borderWidth: 1, borderColor: DESIGN.borderStrong, marginBottom: 20 },
-  brand: { fontFamily: DESIGN.fontDisplayBlack, color: '#FFF', fontSize: 42, letterSpacing: 6 },
+  brand: { fontFamily: DESIGN.fontDisplayBlack, color: '#1E2F23', fontSize: 42, letterSpacing: 6 },
   tagline: { fontFamily: DESIGN.fontLabelSemiBold, color: DESIGN.textSecondary, fontSize: 9, letterSpacing: 4, marginTop: 4, opacity: 0.8 },
 
-  cardWrapper: { borderRadius: DESIGN.radiusCard, overflow: 'hidden', borderWidth: 1, borderColor: DESIGN.borderStrong, backgroundColor: DESIGN.bgCard },
+  cardWrapper: { borderRadius: DESIGN.radiusCard, overflow: 'hidden', borderWidth: 1, borderColor: DESIGN.borderStrong, backgroundColor: '#FFF' },
   card: { padding: 0 },
 
   tabContainer: { flexDirection: 'row', height: 60, borderBottomWidth: 1, borderBottomColor: DESIGN.borderDefault, backgroundColor: 'rgba(0,0,0,0.15)' },
   tabIndicator: { position: 'absolute', bottom: 0, width: '50%', height: 2, backgroundColor: DESIGN.primary },
   tab: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   tabText: { fontFamily: DESIGN.fontLabel, fontSize: 11, letterSpacing: 1.5, color: DESIGN.textMuted },
-  tabTextActive: { color: '#FFF' },
+  tabTextActive: { color: '#1E2F23' },
 
   form: { padding: 30, gap: 20 },
   inputGroup: { gap: 8 },
   label: { fontFamily: DESIGN.fontLabelSemiBold, fontSize: 9, color: DESIGN.textSecondary, letterSpacing: 1.5, marginLeft: 2 },
   inputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 16, borderWidth: 1, borderColor: DESIGN.borderDefault },
   icon: { marginLeft: 16, marginRight: 12 },
-  input: { flex: 1, fontFamily: DESIGN.fontRegular, color: '#FFF', paddingVertical: 16, paddingRight: 16, fontSize: 14 },
+  input: { flex: 1, fontFamily: DESIGN.fontRegular, color: '#1E2F23', paddingVertical: 16, paddingRight: 16, fontSize: 14 },
 
   methodToggle: { flexDirection: 'row', gap: 10, marginBottom: 4 },
   methodBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: DESIGN.borderDefault, backgroundColor: 'rgba(0,0,0,0.1)' },
@@ -337,7 +338,7 @@ const s = StyleSheet.create({
   actionRow: { marginTop: 10 },
   submitBtn: { borderRadius: 18, overflow: 'hidden' },
   submitGradient: { paddingVertical: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
-  submitText: { fontFamily: DESIGN.fontBlack, color: '#FFF', fontSize: 14, letterSpacing: 2 },
+  submitText: { fontFamily: DESIGN.fontBlack, color: '#1E2F23', fontSize: 14, letterSpacing: 2 },
 
   footer: { alignItems: 'center', marginTop: 40, gap: 8 },
   securityTag: { flexDirection: 'row', alignItems: 'center', gap: 6, opacity: 0.6 },

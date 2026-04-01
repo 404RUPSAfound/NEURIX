@@ -65,7 +65,11 @@ export default function RootLayout() {
         <Stack.Screen name="triage" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="resources" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="relief" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="report" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="disasters_detail" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="community_detail" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="hospitals_detail" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="alerts_detail" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="analysis_detail" options={{ animation: 'slide_from_right' }} />
       </Stack>
     </GestureHandlerRootView>
   );

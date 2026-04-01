@@ -36,3 +36,7 @@
 {"level":"error","message":"Sentinel Route Error: Sentinel Hub Authentication Failed.","service":"satellite-recon-service","timestamp":"2026-03-31T19:32:36.314Z"}
 {"level":"error","message":"Sentinel OAuth Failure: Request failed with status code 401","service":"satellite-recon-service","timestamp":"2026-03-31T19:35:06.071Z"}
 {"level":"error","message":"Sentinel Route Error: Sentinel Hub Authentication Failed.","service":"satellite-recon-service","timestamp":"2026-03-31T19:35:06.071Z"}
+{"level":"error","message":"❌  MONGODB_CONNECTION_ERROR: connect ECONNREFUSED ::1:27017, connect ECONNREFUSED 127.0.0.1:27017","service":"satellite-recon-service","timestamp":"2026-04-01T20:18:21.003Z"}
+{"level":"error","message":"Local AI Integration Error: timeout of 35000ms exceeded","service":"satellite-recon-service","timestamp":"2026-04-01T20:21:55.888Z"}
+{"level":"error","message":"Open-Meteo Fetch Error for [19.076, 72.8777]: socket hang up","service":"satellite-recon-service","timestamp":"2026-04-01T20:30:05.782Z"}
+{"level":"error","message":"Open-Meteo Fetch Error for [22.5726, 88.3639]: Client network socket disconnected before secure TLS connection was established","service":"satellite-recon-service","timestamp":"2026-04-01T20:30:06.219Z"}

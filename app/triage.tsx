@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, TextInput, Modal, Dimensions, Animated } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, TextInput, Modal, Dimensions, Animated, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -82,17 +82,15 @@ export default function TriageScreen() {
 
   return (
     <View style={s.container}>
-      <LinearGradient colors={['#05080A', '#020508']} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={['#ebfbedff', '#cafbc1ff']} style={StyleSheet.absoluteFill} />
+      <Image source={require('../assets/images/bg-pattern.jpg')} style={[StyleSheet.absoluteFill, { opacity: 0.12 }]} resizeMode="cover" />
       
       <View style={s.header}>
         <TouchableOpacity 
-          onPress={() => {
-            if (router.canGoBack()) router.back();
-            else router.push('/');
-          }} 
+          onPress={() => router.canGoBack() ? router.back() : router.replace('/')} 
           style={s.backBtn}
         >
-          <ArrowLeft color="#FFF" size={20} />
+          <ArrowLeft color="#1E2F23" size={20} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={s.headerTitle}>CASUALTY TRIAGE</Text>
@@ -261,42 +259,42 @@ function StatMini({ label, val, color }: any) {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#05080A' },
-  header: { paddingTop: 60, paddingHorizontal: 24, paddingBottom: 24, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
-  backBtn: { width: 44, height: 44, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.03)', alignItems: 'center', justifyContent: 'center' },
+  container: { flex: 1, backgroundColor: '#ebfbedff' },
+  header: { paddingTop: 60, paddingHorizontal: 24, paddingBottom: 24, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.05)' },
+  backBtn: { width: 44, height: 44, borderRadius: 14, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center' },
   addBtn: { width: 44, height: 44, borderRadius: 14, backgroundColor: DESIGN.primary, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { fontFamily: DESIGN.fontDisplayBlack, color: '#FFF', fontSize: 16, letterSpacing: 2, marginLeft: 20 },
-  headerSub: { fontFamily: DESIGN.fontLabelSemiBold, color: '#555', fontSize: 8, letterSpacing: 1, marginLeft: 20, textTransform: 'uppercase' },
+  headerTitle: { fontFamily: DESIGN.fontDisplayBlack, color: '#1E2F23', fontSize: 16, letterSpacing: 2, marginLeft: 20 },
+  headerSub: { fontFamily: DESIGN.fontLabelSemiBold, color: '#90A4AE', fontSize: 8, letterSpacing: 1, marginLeft: 20, textTransform: 'uppercase' },
 
   scroll: { paddingBottom: 100 },
   statsRowHUD: { flexDirection: 'row', justifyContent: 'space-between', padding: 24, paddingBottom: 12 },
   statMini: { alignItems: 'center' },
   statMiniVal: { fontFamily: DESIGN.fontDisplayBlack, fontSize: 20 },
-  statMiniLbl: { fontFamily: DESIGN.fontLabel, color: '#555', fontSize: 7, letterSpacing: 1.5, marginTop: 4 },
+  statMiniLbl: { fontFamily: DESIGN.fontLabel, color: '#90A4AE', fontSize: 7, letterSpacing: 1.5, marginTop: 4 },
 
   content: { padding: 20, gap: 14 },
-  card: { padding: 22, borderRadius: 28, borderLeftWidth: 4, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', overflow: 'hidden' },
+  card: { padding: 22, borderRadius: 28, borderLeftWidth: 4, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)', overflow: 'hidden' },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 },
   nameRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   dotIndicator: { width: 6, height: 6, borderRadius: 3, marginTop: 4 },
-  patientName: { fontFamily: DESIGN.fontBold, color: '#FFF', fontSize: 13, letterSpacing: 0.5 },
+  patientName: { fontFamily: DESIGN.fontBold, color: '#1E2F23', fontSize: 13, letterSpacing: 0.5 },
   gpsTag: { fontFamily: DESIGN.fontLabelSemiBold, color: DESIGN.info, fontSize: 8, marginTop: 4, letterSpacing: 0.5 },
-  timestamp: { fontFamily: DESIGN.fontLabel, color: '#444', fontSize: 8 },
+  timestamp: { fontFamily: DESIGN.fontLabel, color: '#B0BEC5', fontSize: 8 },
 
   vitals: { flexDirection: 'row', gap: 10, marginBottom: 18 },
-  vitalBox: { flex: 1, padding: 14, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.02)', alignItems: 'center', gap: 6, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
-  vitalVal: { fontFamily: DESIGN.fontDisplayBlack, color: '#FFF', fontSize: 14 },
-  vitalLbl: { fontFamily: DESIGN.fontLabel, color: '#555', fontSize: 7, letterSpacing: 1 },
+  vitalBox: { flex: 1, padding: 14, borderRadius: 18, backgroundColor: '#FFF', alignItems: 'center', gap: 6, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' },
+  vitalVal: { fontFamily: DESIGN.fontDisplayBlack, color: '#1E2F23', fontSize: 14 },
+  vitalLbl: { fontFamily: DESIGN.fontLabel, color: '#90A4AE', fontSize: 7, letterSpacing: 1 },
 
-  conditionText: { fontFamily: DESIGN.fontBody, color: '#7A8C99', fontSize: 11, lineHeight: 18 },
+  conditionText: { fontFamily: DESIGN.fontBody, color: '#546E7A', fontSize: 11, lineHeight: 18 },
 
   modalOverlay: { flex: 1, justifyContent: 'flex-end' },
   modalContent: { backgroundColor: '#0A0F14', borderTopLeftRadius: 36, borderTopRightRadius: 36, padding: 28, maxHeight: height * 0.8 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 },
-  modalTitle: { fontFamily: DESIGN.fontDisplayBlack, color: '#FFF', fontSize: 20, letterSpacing: 2 },
+  modalTitle: { fontFamily: DESIGN.fontDisplayBlack, color: '#1E2F23', fontSize: 20, letterSpacing: 2 },
   
-  label: { fontFamily: DESIGN.fontLabelSemiBold, color: '#555', fontSize: 9, letterSpacing: 1.5, marginBottom: 10, textTransform: 'uppercase' },
-  input: { backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 16, padding: 16, color: '#FFF', fontFamily: DESIGN.fontMedium, fontSize: 14, marginBottom: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
+  label: { fontFamily: DESIGN.fontLabelSemiBold, color: '#90A4AE', fontSize: 9, letterSpacing: 1.5, marginBottom: 10, textTransform: 'uppercase' },
+  input: { backgroundColor: '#FFF', borderRadius: 16, padding: 16, color: '#1E2F23', fontFamily: DESIGN.fontMedium, fontSize: 14, marginBottom: 24, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' },
   
   tagRow: { flexDirection: 'row', gap: 10, marginBottom: 32 },
   tagBtn: { flex: 1, height: 48, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
@@ -304,10 +302,10 @@ const s = StyleSheet.create({
 
   vitalsInputRow: { flexDirection: 'row', gap: 14 },
   submitBtn: { height: 60, backgroundColor: DESIGN.primary, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginTop: 20, marginBottom: 40 },
-  submitBtnText: { fontFamily: DESIGN.fontBold, color: '#FFF', fontSize: 14, letterSpacing: 2 },
+  submitBtnText: { fontFamily: DESIGN.fontBold, color: '#1E2F23', fontSize: 14, letterSpacing: 2 },
 
   emptyState: { alignItems: 'center', gap: 20, marginTop: 120, opacity: 0.8 },
-  emptyText: { fontFamily: DESIGN.fontBody, color: '#7A8C99', fontSize: 13, letterSpacing: 1 },
+  emptyText: { fontFamily: DESIGN.fontBody, color: '#546E7A', fontSize: 13, letterSpacing: 1 },
   scanBtn: { marginTop: 20, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: DESIGN.primary + '40', backgroundColor: DESIGN.primary + '10' },
   scanBtnText: { fontFamily: DESIGN.fontLabelSemiBold, color: DESIGN.primary, fontSize: 10, letterSpacing: 2 },
 });

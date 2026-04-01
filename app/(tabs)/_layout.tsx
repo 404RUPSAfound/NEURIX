@@ -3,6 +3,7 @@ import { BlurView } from 'expo-blur';
 import { Home, Clock, User, MessageSquare, Radar, Zap, Users, BrainCircuit, ChevronDown } from 'lucide-react-native';
 import { View, StyleSheet, Platform } from 'react-native';
 import { DESIGN } from '@/constants/design';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function TabLayout() {
   return (
@@ -10,14 +11,17 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false,
         tabBarShowLabel: false,
-        tabBarActiveTintColor: '#81C784',
-        tabBarInactiveTintColor: 'rgba(129, 199, 132, 0.4)',
+        tabBarActiveTintColor: '#FFFFFF',
+        tabBarInactiveTintColor: 'rgba(255, 255, 255, 0.4)',
         tabBarStyle: s.tabBar,
-        tabBarItemStyle: { height: 52, justifyContent: 'center', alignItems: 'center', paddingTop: 10 },
+        tabBarItemStyle: { height: 50, justifyContent: 'center', alignItems: 'center', paddingTop: 8 },
         tabBarBackground: () => (
-          <View style={s.tabBarBg}>
-            <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
-          </View>
+          <LinearGradient 
+            colors={['#0F2027', '#28623A']} 
+            start={{ x: 0, y: 0 }} 
+            end={{ x: 0, y: 1 }} 
+            style={s.tabBarBg}
+          />
         ),
       }}
       initialRouteName="index"
@@ -27,7 +31,7 @@ export default function TabLayout() {
         options={{ 
           tabBarIcon: ({ color, focused }) => (
             <View style={[s.iconBox, focused && s.iconBoxActive]}>
-              <Home color={color} size={22} /> 
+              <Home color={color} size={18} /> 
             </View>
           )
         }} 
@@ -37,7 +41,7 @@ export default function TabLayout() {
         options={{ 
           tabBarIcon: ({ color, focused }) => (
             <View style={[s.iconBox, focused && s.iconBoxActive]}>
-              <User color={color} size={22} /> 
+              <User color={color} size={18} /> 
             </View>
           )
         }} 
@@ -47,7 +51,7 @@ export default function TabLayout() {
         options={{ 
           tabBarIcon: ({ color, focused }) => (
             <View style={[s.iconBox, focused && s.iconBoxActive]}>
-              <Radar color={color} size={22} /> 
+              <Radar color={color} size={18} /> 
             </View>
           )
         }} 
@@ -57,7 +61,7 @@ export default function TabLayout() {
         options={{ 
           tabBarIcon: ({ color, focused }) => (
             <View style={[s.iconBox, focused && s.iconBoxActive]}>
-              <Users color={color} size={22} /> 
+              <Users color={color} size={18} /> 
             </View>
           )
         }} 
@@ -67,7 +71,7 @@ export default function TabLayout() {
         options={{ 
           tabBarIcon: ({ color, focused }) => (
             <View style={[s.iconBox, focused && s.iconBoxActive]}>
-              <Zap color={color} size={22} /> 
+              <Zap color={color} size={18} /> 
             </View>
           )
         }} 
@@ -77,7 +81,7 @@ export default function TabLayout() {
         options={{ 
           tabBarIcon: ({ color, focused }) => (
             <View style={[s.iconBox, focused && s.iconBoxActive]}>
-              <Clock color={color} size={22} /> 
+              <Clock color={color} size={18} /> 
             </View>
           )
         }} 
@@ -87,7 +91,7 @@ export default function TabLayout() {
         options={{ 
           tabBarIcon: ({ color, focused }) => (
             <View style={[s.iconBox, focused && s.iconBoxActive]}>
-              <BrainCircuit color={color} size={20} /> 
+              <BrainCircuit color={color} size={18} /> 
             </View>
           )
         }} 
@@ -97,7 +101,7 @@ export default function TabLayout() {
         options={{
           tabBarIcon: ({ color, focused }) => (
             <View style={[s.iconBox, focused && s.iconBoxActive]}>
-              <MessageSquare color={color} size={20} /> 
+              <MessageSquare color={color} size={18} /> 
             </View>
           ),
           tabBarStyle: { display: 'none' },
@@ -109,7 +113,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused }) => (
             <View style={[s.iconBox, focused && s.iconBoxActive]}>
               <View style={{ opacity: 0.5 }}>
-                 <ChevronDown color={color} size={20} /> 
+                 <ChevronDown color={color} size={18} /> 
               </View>
             </View>
           )
@@ -123,19 +127,18 @@ const s = StyleSheet.create({
   tabBar: {
     position: 'absolute',
     bottom: 20,
-    left: 8,
-    right: 8,
+    left: 4,
+    right: 4,
     elevation: 0,
     backgroundColor: 'transparent',
     borderTopWidth: 0,
-    height: 52,
-    borderRadius: 26,
+    height: 50,
+    borderRadius: 25,
     overflow: 'hidden',
   },
   tabBarBg: {
     flex: 1,
-    backgroundColor: '#023f11',
-    borderRadius: 26,
+    borderRadius: 25,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
     ...Platform.select({

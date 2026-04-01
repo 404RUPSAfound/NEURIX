@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Animated, ActivityIndicator, Alert, LayoutAnimation,
-  UIManager, Platform, Dimensions
+  UIManager, Platform, Dimensions, Image
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -85,7 +85,8 @@ export default function ResultsScreen() {
 
   return (
     <View style={s.container}>
-      <LinearGradient colors={[DESIGN.bg, DESIGN.bgSurface]} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={['#ebfbedff', '#cafbc1ff']} style={StyleSheet.absoluteFill} />
+      <Image source={require('../assets/images/bg-pattern.jpg')} style={[StyleSheet.absoluteFill, { opacity: 0.12 }]} resizeMode="cover" />
       
       <View style={s.header}>
         <TouchableOpacity style={s.backBtn} onPress={() => router.replace('/')}>
@@ -164,12 +165,12 @@ export default function ResultsScreen() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: DESIGN.bg },
-  loadCenter: { flex: 1, backgroundColor: DESIGN.bg, alignItems: 'center', justifyContent: 'center' },
+  container: { flex: 1, backgroundColor: '#ebfbedff' },
+  loadCenter: { flex: 1, backgroundColor: '#ebfbedff', alignItems: 'center', justifyContent: 'center' },
   header: { paddingTop: 60, paddingHorizontal: 24, paddingBottom: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: DESIGN.borderSubtle },
-  backBtn: { padding: 10, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 12 },
+  backBtn: { padding: 10, backgroundColor: '#FFF', borderRadius: 12 },
   headerTitle: { fontFamily: DESIGN.fontDisplayBlack, color: DESIGN.textPrimary, fontSize: 18, letterSpacing: 2 },
-  iconBtn: { padding: 10, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 12 },
+  iconBtn: { padding: 10, backgroundColor: '#FFF', borderRadius: 12 },
   
   scroll: { padding: 24, paddingBottom: 100 },
   sitCard: { padding: 24, borderRadius: 32, borderWidth: 1, borderColor: DESIGN.borderDefault, overflow: 'hidden', marginBottom: 40 },
@@ -180,7 +181,7 @@ const s = StyleSheet.create({
   sitTitle: { fontFamily: DESIGN.fontDisplay, color: DESIGN.textPrimary, fontSize: 24, marginBottom: 12 },
   sitDesc: { fontFamily: DESIGN.fontBody, color: DESIGN.textSecondary, fontSize: 14, lineHeight: 22, marginBottom: 24 },
   
-  statGrid: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: 'rgba(255,255,255,0.02)', padding: 16, borderRadius: 20 },
+  statGrid: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: '#FFF', padding: 16, borderRadius: 20 },
   statItem: { alignItems: 'center' },
   statVal: { fontFamily: DESIGN.fontDisplayBlack, color: DESIGN.textPrimary, fontSize: 18 },
   statLabel: { fontFamily: DESIGN.fontLabel, color: DESIGN.textMuted, fontSize: 8, marginTop: 4, letterSpacing: 1 },
@@ -214,5 +215,5 @@ const s = StyleSheet.create({
   
   actionBtn: { borderRadius: 20, overflow: 'hidden', marginTop: 20 },
   btnGradient: { paddingVertical: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12 },
-  btnText: { fontFamily: DESIGN.fontDisplay, color: '#FFF', fontSize: 14, letterSpacing: 1 },
+  btnText: { fontFamily: DESIGN.fontDisplay, color: '#1E2F23', fontSize: 14, letterSpacing: 1 },
 });

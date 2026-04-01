@@ -1,0 +1,11 @@
+﻿.expo/types/router.d.ts(15,27): error TS1128: Declaration or statement expected.
+.expo/types/router.d.ts(15,29): error TS1109: Expression expected.
+.expo/types/router.d.ts(15,78): error TS1005: ',' expected.
+.expo/types/router.d.ts(15,114): error TS1005: ',' expected.
+.expo/types/router.d.ts(15,152): error TS1005: ',' expected.
+.expo/types/router.d.ts(15,188): error TS1005: ',' expected.
+.expo/types/router.d.ts(15,241): error TS1005: ',' expected.
+.expo/types/router.d.ts(15,277): error TS1005: ',' expected.
+.expo/types/router.d.ts(16,5): error TS1128: Declaration or statement expected.
+.expo/types/router.d.ts(17,3): error TS1128: Declaration or statement expected.
+.expo/types/router.d.ts(18,1): error TS1128: Declaration or statement expected.

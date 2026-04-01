@@ -6,8 +6,14 @@ const rateLimit = require('express-rate-limit');
 const config = require('./config');
 const logger = require('./utils/logger');
 const tileRoutes = require('./routes/tileRoutes');
+const disasterRoutes = require('./routes/disasterRoutes');
+const connectDB = require('./config/db');
+const { startScheduler } = require('./services/scheduler');
 
 const app = express();
+
+// Initialize MongoDB Connection
+connectDB();
 
 // ─────────────────────────────────────────────
 // MISSION-CRITICAL SECURITY MIDDLEWARE
@@ -38,6 +44,8 @@ app.use('/tiles', limiter);
 // ─────────────────────────────────────────────
 
 app.use('/api/v1', tileRoutes);
+app.use('/api', disasterRoutes); // AI Disaster Intelligence System
+
 
 // Health Check
 app.get('/health', (req, res) => {
@@ -65,6 +73,9 @@ app.use((err, req, res, next) => {
 app.listen(config.port, () => {
   logger.info(`🚀  NEURIX SATELLITE TILE SERVICE LIVE ON PORT: ${config.port}`);
   logger.info(`🛰️  Mode: ${config.env}`);
+  
+  // Start the background intelligence workers
+  startScheduler();
 });
 
 module.exports = app;

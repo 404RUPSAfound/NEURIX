@@ -37,16 +37,19 @@ export const Timeline: React.FC<{ items: TimelineItem[] }> = ({ items }) => {
   );
 };
 
-export const ResourceGrid: React.FC<{ items: string[] }> = ({ items }) => (
+export const ResourceGrid: React.FC<{ items: any[] }> = ({ items }) => (
   <View style={s.container}>
     <Text style={s.sectionTitle}>Required Resources</Text>
     <View style={s.grid}>
-      {items.map((it, idx) => (
-        <View key={idx} style={s.gridItem}>
-          <Navigation color={DESIGN.primary} size={12} style={{ marginRight: 8 }} />
-          <Text style={s.gridText}>{it}</Text>
-        </View>
-      ))}
+      {items.map((it, idx) => {
+        const displayText = typeof it === 'string' ? it : `${it.label || 'RESOURCE'}: ${it.value || '0'}${it.unit || ''}`;
+        return (
+          <View key={idx} style={s.gridItem}>
+            <Navigation color={DESIGN.primary} size={12} style={{ marginRight: 8 }} />
+            <Text style={s.gridText}>{displayText}</Text>
+          </View>
+        );
+      })}
     </View>
   </View>
 );

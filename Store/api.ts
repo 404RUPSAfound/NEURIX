@@ -4,7 +4,7 @@ import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { API_BASE_URL as PLATFORM_API_BASE } from '@/constants/api';
 
-const DEFAULT_API_PORT = 8001;
+const DEFAULT_API_PORT = 8000;
 
 // C:\Users\RUPSA\Desktop\NEURIX\Store\api.ts
 // Decide API base once for all platforms.
@@ -306,6 +306,12 @@ export const mapAPI = {
   getDashboardStats: (lat: number, lng: number, radius = 50) =>
     api.get('/api/dashboard/stats', { params: { lat, lng, radius } }).then((r) => r.data),
 
+  getTacticalSurvival: (lat: number, lng: number) =>
+    api.get('/api/dashboard/tactical-survival', { params: { lat, lng } }).then((r) => r.data),
+
+  deployUnit: (lat: number, lng: number, unitType = 'GENERAL_RESPONDER') =>
+    api.post('/api/ops/deploy-unit', { latitude: lat, longitude: lng, unit_type: unitType }).then((r) => r.data),
+
   // ── REAL MISSION INTELLIGENCE ──────────────────────────
   
   analyze: (location: string, description: string, people_affected = 0, severity = "MEDIUM") => 
@@ -353,8 +359,8 @@ export const mapAPI = {
 
 
 export const analyzeAPI = {
-  chat: async (message: string, history: Array<{role: string; text: string}> = []) => {
-    const res = await api.post('/chat', { message, history });
+  chat: async (message: string, history: Array<{role: string; text: string}> = [], location?: any) => {
+    const res = await satelliteApi.post('/api/chat', { message, history, location });
     return res.data;
   },
   analyze: async (payload: { location: string; description: string; people_affected?: number; severity?: string }) => {
@@ -375,6 +381,11 @@ export const satelliteAPI = {
     `${SATELLITE_API_URL}/api/v1/sentinel/${z}/${x}/${y}?type=${mode}`,
   getNasaUrl: (z: number, x: number, y: number, layer = 'VIIRS_SNPP_CorrectedReflectance_TrueColor') => 
     `${SATELLITE_API_URL}/api/v1/nasa/${z}/${x}/${y}?layer=${layer}`,
+};
+
+export const disasterAPI = {
+  getLive: (lat?: number, lon?: number) => satelliteApi.get('/api/disaster/live', { params: { lat, lon } }).then(r => r.data),
+  getRisk: (lat?: number, lon?: number) => satelliteApi.get('/api/disaster/risk', { params: { lat, lon } }).then(r => r.data),
 };
 
 
