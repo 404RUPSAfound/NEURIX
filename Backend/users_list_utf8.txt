@@ -1,0 +1,7 @@
+﻿Username        | Email                     | Verified   | Role      
+----------------------------------------------------------------------
+admin           | admin@neurix.local        | 1          | commander 
+test            | test@example.com          | 0          | volunteer 
+panditrupsa09   | panditrupsa09@gmail.com   | 1          | volunteer 
+a               | a@example.com             | 1          | volunteer 
+sahapri112      | sahapri112@gmail.com      | 1          | volunteer 

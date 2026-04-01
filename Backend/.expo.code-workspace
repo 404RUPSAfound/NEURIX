@@ -1,0 +1,43 @@
+{
+	"folders": [
+		{
+			"path": "../.expo"
+		},
+		{
+			"path": "../.venv"
+		},
+		{
+			"path": "../.vscode"
+		},
+		{
+			"path": "../app"
+		},
+		{
+			"path": "../assets"
+		},
+		{
+			"path": "."
+		},
+		{
+			"path": "../components"
+		},
+		{
+			"path": "../constants"
+		},
+		{
+			"path": "../Frontend"
+		},
+		{
+			"path": "../hooks"
+		},
+		{
+			"path": "../node_modules"
+		},
+		{
+			"path": "../scripts"
+		},
+		{
+			"path": "../Store"
+		}
+	]
+}

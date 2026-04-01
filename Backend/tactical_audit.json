@@ -1,0 +1,15 @@
+[
+  {
+    "index": 0,
+    "timestamp": "2026-03-29T11:31:02.881783",
+    "event": "REGISTER_VERIFY",
+    "operator": "MajorRupsa",
+    "prev_hash": "NEURIX_GENESIS_BLOCK_0000000000000000",
+    "metadata": {
+      "contact": "panditrupsa09@gmail.com",
+      "role": "volunteer",
+      "badge": "FIELD-46CCBB"
+    },
+    "hash": "cd7ee368a21bdd211699d93b1f221d13d5dead7c911d8a7e94603e014af01ab2"
+  }
+]

@@ -1,0 +1,20 @@
+// constants/Colors.ts
+export const Colors = {
+  bg: '#0d1117',
+  card: '#161b22',
+  border: '#30363d',
+  borderLight: '#21262d',
+  primary: '#58a6ff',
+  purple: '#a371f7',
+  coral: '#f78166',
+  green: '#3fb950',
+  yellow: '#d29922',
+  red: '#f85149',
+  textPrimary: '#e6edf3',
+  textSecondary: '#8b949e',
+  textTertiary: '#6e7681',
+  critical: { bg: '#2d0f0f', border: '#f85149', text: '#f85149' },
+  high: { bg: '#2d1f0f', border: '#d29922', text: '#d29922' },
+  medium: { bg: '#0f2d20', border: '#3fb950', text: '#3fb950' },
+  low: { bg: '#0f1f2d', border: '#58a6ff', text: '#58a6ff' },
+};

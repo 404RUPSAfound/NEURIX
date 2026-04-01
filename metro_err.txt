@@ -1,0 +1,2 @@
+Unable to reach well-known versions endpoint. Using local dependency map expo/bundledNativeModules.json for version validation
+Dependency validation is unreliable in offline-mode
