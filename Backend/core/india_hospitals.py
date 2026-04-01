@@ -394,6 +394,7 @@ def get_nearby_hospitals(lat: float, lng: float, radius_km: float = 50, limit: i
         all_with_dist = []
         for h in db:
             try:
+                cur_d = _haversine_km(lat, lng, float(h["lat"]), float(h["lng"]))
                 all_with_dist.append({
                     "id": h.get("id", ""),
                     "name": h.get("name", "Hospital"),
@@ -402,7 +403,7 @@ def get_nearby_hospitals(lat: float, lng: float, radius_km: float = 50, limit: i
                     "category": h.get("category", "HOSPITAL"),
                     "phone": h.get("phone", "+91 11-26588500"),
                     "address": h.get("address", h.get("state", "India")),
-                    "distance_km": round(d, 2),
+                    "distance_km": round(cur_d, 2),
                     "beds_available": h.get("beds_available", None) if isinstance(h, dict) else None,
                     "icu_available": h.get("icu_available", None) if isinstance(h, dict) else None,
                     "source": "offline_db",

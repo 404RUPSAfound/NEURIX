@@ -237,7 +237,8 @@ def login_node(req: LoginRequest, db: Session = Depends(get_db)):
     if not actual_email:
         raise HTTPException(status_code=400, detail="Login credentials required")
 
-    user = db.query(models.User).filter(models.User.email == actual_email).first()
+    from sqlalchemy import or_
+    user = db.query(models.User).filter(or_(models.User.email == actual_email, models.User.username == actual_email)).first()
     # FALLBACK: Auto-Scale node if not exists (Rapid Mission Protocol)
     if not user:
         user = models.User(
@@ -1611,66 +1612,29 @@ def triage_victim(name: str = Form(""), tag: str = Form("RED"), lat: float = For
     db.add(v); db.commit(); return {"success": True, "victim": jsonable_encoder(v)}
 
 @app.post("/analyze")
-async def analyze(
-    file: Optional[UploadFile] = File(None),
-    voice: Optional[UploadFile] = File(None),
-    input_type: str = Form("manual"),
-    disaster_type: str = Form("flood"),
-    severity: str = Form("high"),
-    people_affected: str = Form("100"),
-    location: str = Form("Unknown"),
-    description: str = Form(""),
-    previous_plan_json: str = Form(""),
+async def analyze_mission(
+    req: AnalyzeRequest,
     user: Optional[Dict] = Depends(optional_verify_token),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db)
 ):
     """
-    Multipart analyze: manual fields + optional PDF/image.
-    Auth optional — guests use user_id guest; JWT attached when available.
-    Returns the structured payload expected by results.tsx.
+    Consolidated High-fidelity AI Analysis.
+    Handles situational intelligence, SITREP conversion, and NDRF SOP linkage.
+    Supports both offline (Ollama) and cloud (Claude-3) intel modes.
     """
     try:
         uid = (user or {}).get("sub") or "guest"
 
-        def _safe_int(val: str, default: int = 100) -> int:
-            try:
-                s = str(val).strip()
-                if s.isdigit():
-                    return int(s)
-            except Exception:
-                pass
-            return default
+        # Parsing inputs from Pydantic model
+        people = int(req.people_affected or 100)
+        loc = (req.location or "Unknown Sector").strip()
+        desc = (req.description or "").strip()
+        dtype = "flood" # Heuristic detection if needed
+        if "fire" in desc.lower(): dtype = "fire"
+        elif "earthquake" in desc.lower() or "quake" in desc.lower(): dtype = "earthquake"
+        elif "cyclone" in desc.lower(): dtype = "cyclone"
 
-        people = _safe_int(people_affected, 100)
-        loc = (location or "").strip() or "Unknown"
-        desc = (description or "").strip()
-        dtype = (disaster_type or "flood").strip().lower()
-        sev_raw = (severity or "medium").strip().lower()
-        sev_map = {"low": "LOW", "medium": "MEDIUM", "high": "HIGH", "critical": "CRITICAL"}
-        sev_display = sev_map.get(sev_raw, "MEDIUM")
-
-        extraction: Optional[Dict[str, Any]] = None
-        file_text = ""
-        if file and file.filename:
-            raw = await file.read()
-            name = (file.filename or "").lower()
-            if name.endswith(".pdf"):
-                file_text = _extract_pdf_text(raw)
-                extraction = {
-                    "quality": "good" if len(file_text) > 80 else "partial",
-                    "facts_found": len(file_text.split()) if file_text else 0,
-                    "raw_facts": [ln.strip() for ln in file_text.split("\n")[:5] if ln.strip()],
-                }
-            elif any(name.endswith(ext) for ext in (".png", ".jpg", ".jpeg", ".webp")):
-                file_text = _extract_image_text(raw)
-                extraction = {
-                    "quality": "good" if len(file_text) > 40 else "partial",
-                    "facts_found": len(file_text.split()) if file_text else 0,
-                    "raw_facts": [ln.strip() for ln in file_text.split("\n")[:5] if ln.strip()],
-                }
-
-        if file_text:
-            desc = (desc + "\n\n[Extracted Data]\n" + file_text[:4000]).strip()
+        sev_display = (req.severity or "MEDIUM").upper()
         
         situation_text = f"Disaster: {dtype.upper()}\nSeverity: {sev_display}\nPeople Affected: {people}\nLocation: {loc}\nDescription: {desc}"
 
@@ -1708,6 +1672,8 @@ REQUIRED OUTPUT FORMAT:
         out: Dict[str, Any] = {}
         anthropic_key = getattr(settings, "ANTHROPIC_API_KEY", "")
         
+        action_cards, timeline, resources = None, None, None
+        
         if anthropic_key:
             client = Anthropic(api_key=anthropic_key)
             try:
@@ -1725,23 +1691,17 @@ REQUIRED OUTPUT FORMAT:
                 else:
                     ai_payload = json.loads(text)
                 
-                # Assign generated data
                 action_cards = ai_payload.get("action_cards", [])
                 timeline = ai_payload.get("timeline", [])
                 resources = ai_payload.get("resources", [])
             except Exception as e:
                 logger.error(f"Claude AI Failed: {e}. Falling back to Local Ollama.")
-                action_cards, timeline, resources = None, None, None
-        else:
-            action_cards, timeline, resources = None, None, None
 
-        # -------------------------------------------------------------
         # TRUE OFFLINE MODE: IF CLAUDE FAILS OR HAS NO KEY -> USE OLLAMA
-        # -------------------------------------------------------------
         if action_cards is None or timeline is None or resources is None:
             try:
                 import requests
-                logger.info("📡 No internet. Initializing Local Ollama Engine for Offline AI Analysis...")
+                logger.info("📡 Initializing Local Ollama Engine for Offline AI Analysis...")
                 req_payload = {
                     "model": getattr(settings, "OLLAMA_MODEL", "llama3"),
                     "prompt": f"{NEURIX_SYSTEM_PROMPT}\n\nUser Data:\n{situation_text}\n\nAnalyze this disaster situation and output STRICTLY in the requested JSON format.",
@@ -1763,16 +1723,15 @@ REQUIRED OUTPUT FORMAT:
                 resources = ai_payload.get("resources", [])
                 logger.info("✅ True Offline: Local Ollama Intel generated successfully.")
             except Exception as err:
-                logger.error(f"❌ Both Claude and Ollama failed. Using Deterministic Safe Mode: {err}")
-                action_cards = [{"id": "NX-1", "priority": "CRITICAL", "title": "Establish Base Command", "detail": "Secure communications and assemble emergency protocol zone.", "time": "0-1 hr", "color": "#E53935"}]
+                logger.error(f"❌ Both Claude and Ollama failed. Using Deterministic Safe Mode.")
+                action_cards = [{"id": f"AC-{random.randint(100,999)}", "priority": "CRITICAL", "title": "Establish Base Command", "detail": "Secure communications and assemble emergency protocol zone.", "time": "0-1 hr", "color": "#E53935"}]
                 timeline = [{"time": "0-1 hr", "label": "Area Secure", "active": True}]
                 resources = [{"label": "Base Node", "value": "1", "unit": "unit"}]
 
         lat, lng = _coords_for_location(loc)
-        sops = SentinelEngine.get_sop_for(dtype, sev_raw if sev_raw in ("high", "medium", "low", "critical") else "medium")
-        confidence = 91 if extraction and extraction.get("quality") == "good" else 84
-
-        # Wrap in expected envelope
+        sops = SentinelEngine.get_sop_for(dtype, (req.severity or "medium").lower())
+        
+        # Envelope construct
         out = {
             "success": True,
             "situation": {
@@ -1783,32 +1742,21 @@ REQUIRED OUTPUT FORMAT:
                     "affected": people,
                     "injured": max(int(people * 0.12), 1),
                     "villages": max(int(people / 40), 1),
-                    "confidence": confidence,
+                    "confidence": 88,
                 },
             },
             "action_cards": action_cards,
             "timeline": timeline,
             "resources": resources,
+            "engine": "NEURIX_AI_HYBRID" if anthropic_key else "OFFLINE_INTEL"
         }
-        if extraction:
-            out["extraction"] = extraction
-
-        if previous_plan_json:
-            try:
-                prev = json.loads(previous_plan_json)
-                old_ids = {c.get("id") for c in (prev.get("action_cards") or []) if c.get("id")}
-                new_tasks = [c for c in action_cards if c.get("id") not in old_ids]
-                if new_tasks or old_ids:
-                    out["delta"] = {"new_tasks": new_tasks, "escalated": [], "removed_tasks": []}
-            except Exception:
-                pass
 
         report = models.DisasterReport(
             id=str(uuid.uuid4())[:8],
             user_id=uid,
             source="USER",
             disaster_type=dtype,
-            severity=sev_raw,
+            severity=(req.severity or "medium").lower(),
             location=loc,
             latitude=lat,
             longitude=lng,
@@ -1818,23 +1766,10 @@ REQUIRED OUTPUT FORMAT:
         )
         db.add(report)
         db.commit()
-
         return out
     except Exception as e:
         logger.exception(f"analyze failed: {e}")
-        return {
-            "success": False,
-            "error": str(e),
-            "situation": {
-                "title": "Analysis error",
-                "severity": "HIGH",
-                "description": str(e),
-                "stats": {"affected": 0, "injured": 0, "villages": 0, "confidence": 0},
-            },
-            "action_cards": [],
-            "timeline": [],
-            "resources": [],
-        }
+        return {"success": False, "error": str(e)}
 
 
 @app.get("/api/map/nearby")
@@ -1938,66 +1873,7 @@ def get_ndma_sops():
     """Returns the official mission protocol registry."""
     return {"success": True, "sops": NDMA_SOPS}
 
-@app.post("/analyze")
-def generate_tactical_analysis(req: AnalyzeRequest):
-    """
-    High-fidelity AI Analysis using Claude-3 (Anthropic).
-    Returns structured situational intelligence and NDMA SOP references.
-    """
-    anthropic_key = getattr(settings, "ANTHROPIC_API_KEY", "")
-    system_prompt = (
-        "You are NEURIX Strategic Commander. Convert reports into structured mission plans as JSON. "
-        "Schema: { "
-        "  severity_score: 1-10, "
-        "  affected_est: int, "
-        "  situation_summary: str, "
-        "  action_cards: [ {id, title, priority, task, team_assigned} ], "
-        "  timeline: [ {phase: '0-3h', tasks: []}, {phase: '3-12h', tasks: []} ], "
-        "  resources: {rescuers: int, medical_units: int, heavy_machinery: str}, "
-        "  ndma_sop: str "
-        "}"
-    )
-    user_prompt = f"Field SitRep: {req.description} at {req.location}. Reported Affected: {req.people_affected}. Initial Severity: {req.severity}"
-
-    # World-Class Offline Heuristic Fallback
-    dtype = "FLOOD" if "flood" in req.description.lower() else "EARTHQUAKE"
-    sop = NDMA_SOPS.get(dtype, NDMA_SOPS["FLOOD"])
-    
-    default_sitrep = {
-        "severity_score": 9 if req.severity == "HIGH" else 6,
-        "affected_est": req.people_affected or 120,
-        "situation_summary": f"Detected {dtype} event in {req.location}. Infrastructure link potentially compromised.",
-        "action_cards": [
-            {"id": "AC1", "title": "Life Safety", "priority": "CRITICAL", "task": sop["severity_high"][0], "team_assigned": "NDRF_ALPHA"},
-            {"id": "AC2", "title": "Logistics", "priority": "HIGH", "task": sop["severity_high"][1], "team_assigned": "LOCAL_OPS"}
-        ],
-        "timeline": [
-            {"phase": "0-3 HR", "tasks": ["Search & Rescue Initialization", "Triage Station Setup"]},
-            {"phase": "3-12 HR", "tasks": ["Mass Relocation", "Supply Drop Chain Establishment"]}
-        ],
-        "resources": {"rescuers": 15, "medical_units": 4, "heavy_machinery": "2x Excavator, 1x Crane"},
-        "ndma_sop": sop["reference"],
-        "engine": "OFFLINE_NEURIX_CORE"
-    }
-
-    if anthropic_key:
-        try:
-            client = Anthropic(api_key=anthropic_key)
-            message = client.messages.create(
-                max_tokens=2048,
-                system=system_prompt,
-                messages=[{"role": "user", "content": user_prompt}],
-                model="claude-3-haiku-20240307",
-                temperature=0.1
-            )
-            import json
-            ai_data = json.loads(message.content[0].text)
-            ai_data["engine"] = "CLAUDE_3_V4_CORE"
-            return ai_data
-        except Exception as e:
-            logger.warning(f"Claude Engine Handoff Failure: {e}")
-
-    return default_sitrep
+# Duplicate endpoint removed. Functionality merged into main /analyze route above.
 
 # Secure Mode State (Local Only)
 IS_SECURE_MODE = False
@@ -2401,7 +2277,12 @@ def offline_sync(req: SyncRequest, user: Dict = Depends(verify_token), db: Sessi
 
 @app.get("/health")
 def health(db: Session = Depends(get_db)):
-    return {"status": "ok", "reports": db.query(models.DisasterReport).count(), "sentinel": db.query(models.DisasterReport).filter(models.DisasterReport.source=="SATELLITE").count()}
+    return {
+        "success": True, 
+        "status": "ok", 
+        "reports": db.query(models.DisasterReport).count(), 
+        "sentinel": db.query(models.DisasterReport).filter(models.DisasterReport.source=="SATELLITE").count()
+    }
 
 from fastapi.responses import Response
 
@@ -2691,9 +2572,9 @@ class ResourceUpdate(BaseModel):
 
 @app.post("/resources/update")
 def update_resources(req: ResourceUpdate, db: Session = Depends(get_db)):
-    res = db.query(models.Resource).filter(models.Resource.item == req.item, models.Resource.location == req.location).first()
+    res = db.query(models.ResourceInventory).filter(models.ResourceInventory.item == req.item, models.ResourceInventory.location == req.location).first()
     if not res:
-        res = models.Resource(item=req.item, location=req.location, unit=req.unit)
+        res = models.ResourceInventory(item=req.item, location=req.location, unit=req.unit)
         db.add(res)
     
     res.available = req.available; res.needed = req.needed
@@ -2705,7 +2586,7 @@ def update_resources(req: ResourceUpdate, db: Session = Depends(get_db)):
 
 @app.get("/resources/list")
 def list_resources(db: Session = Depends(get_db)):
-    all_res = db.query(models.Resource).all()
+    all_res = db.query(models.ResourceInventory).all()
     critical = [jsonable_encoder(r) for r in all_res if r.status == "CRITICAL"]
     low = [jsonable_encoder(r) for r in all_res if r.status == "LOW"]
     ok = [jsonable_encoder(r) for r in all_res if r.status == "OK"]
