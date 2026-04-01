@@ -107,7 +107,7 @@ export default function AIReportEngine() {
         people_affected: peopleAffected,
         location: locationName,
         fileUri: file?.uri || image?.uri || '',
-        fileName: file?.name || 'field_intel.jpg',
+        fileName: file?.name || image?.fileName || (image?.uri ? 'field_intel.jpg' : 'field_intel.pdf'),
         voiceUri: voiceUri || ''
       }
     });

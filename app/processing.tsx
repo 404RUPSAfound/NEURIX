@@ -55,19 +55,40 @@ export default function AIProcessingScreen() {
 
   const handleAnalysis = async () => {
     try {
+      let situationalIntel = params.description as string || "Manual Field Update";
+      
+      // Asset Scan Integration (PDF / IMAGE)
+      if (params.fileUri) {
+          try {
+             setStatus('PARSING_TACTICAL_DOCUMENTS');
+             const scanRes = await mapAPI.scanDocument({
+                uri: params.fileUri as string,
+                name: params.fileName as string || 'field_intel.pdf',
+                type: (params.fileName as string).endsWith('.pdf') ? 'application/pdf' : 'image/jpeg'
+             });
+             if (scanRes.success) {
+                situationalIntel += `\n\n[DOCUMENT_INTEL_EXTRACTED]:\n${scanRes.analysis || scanRes.raw_text}`;
+                setStatus('INTEL_EXTRACTION_SUCCESS');
+             }
+          } catch (scanErr) {
+             console.log("Scan failure, proceeding with text-only intel:", scanErr);
+          }
+      }
+
       const res = await mapAPI.analyze(
         params.location as string || "Unknown Sector",
-        params.description as string || "Manual Field Update",
+        situationalIntel,
         parseInt(params.people_affected as string || "0"),
         params.severity as string || "MEDIUM"
       );
       
+      setStatus('SYNTHESIS_COMPLETE');
       setTimeout(() => {
         router.push({
           pathname: '/analysis_detail',
           params: { data: JSON.stringify(res) }
         });
-      }, 5000); // Artificial delay for premium 'feel'
+      }, 3000);
     } catch (e) {
       console.error(e);
       setStatus('OFFLINE_FALLBACK_ACTIVE');
