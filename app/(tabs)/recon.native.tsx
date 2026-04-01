@@ -185,7 +185,8 @@ export default function NativeReconCommand() {
       {/* Warnings Fixed: moved pointerEvents to style */}
       {activeLayers.radar && (
         <Animated.View 
-          style={[styles.scanLine, { pointerEvents: 'none', transform: [{ translateY: scanLineAnim }] }]}
+          pointerEvents="none"
+          style={[styles.scanLine, { transform: [{ translateY: scanLineAnim }] }]}
         >
           <LinearGradient 
             colors={['transparent', 'rgba(212, 175, 55, 0.2)', 'transparent']} 

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Platform } from 'react-native';
 import { reconAPI } from '@/Store/api';
 
 export interface TacticalNode {
@@ -64,7 +65,7 @@ export const useReconEngine = () => {
 
     const pullLive = async () => {
       try {
-        const res = await reconAPI.liveUnits();
+        const res: { success: boolean; nodes: any[] } = await reconAPI.liveUnits();
         if (!mounted || !res?.success) return;
         const list = Array.isArray(res.nodes) ? res.nodes : [];
 
@@ -114,29 +115,31 @@ export const useReconEngine = () => {
   const triggerGhostSync = useCallback(() => {
     setIsGhostSyncing(true);
     
-    // Web Audio API for tactical radar sweep sound
-    try {
-      const AudioContext = (window as any).AudioContext || (window as any).webkitAudioContext;
-      if (AudioContext) {
-        const ctx = new AudioContext();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
+    // Web Audio API for tactical radar sweep sound (Only on Web)
+    if (Platform.OS === 'web') {
+      try {
+        const AudioContext = (window as any).AudioContext || (window as any).webkitAudioContext;
+        if (AudioContext) {
+          const ctx = new AudioContext();
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
 
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(880, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(110, ctx.currentTime + 1.5);
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(880, ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(110, ctx.currentTime + 1.5);
 
-        gain.gain.setValueAtTime(0.1, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.5);
+          gain.gain.setValueAtTime(0.1, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.5);
 
-        osc.connect(gain);
-        gain.connect(ctx.destination);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
 
-        osc.start();
-        osc.stop(ctx.currentTime + 1.5);
+          osc.start();
+          osc.stop(ctx.currentTime + 1.5);
+        }
+      } catch (e) {
+        console.warn('GhostSync Audio failed or not supported in this environment');
       }
-    } catch (e) {
-      console.warn('GhostSync Audio failed or not supported in this environment');
     }
 
     setTimeout(() => {

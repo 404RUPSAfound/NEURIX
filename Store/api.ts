@@ -399,7 +399,7 @@ export const reconAPI = {
     unit_type?: string;
     label?: string;
   }) => api.post('/api/ops/units/gps', payload).then((r) => r.data),
-  liveUnits: () => api.get('/api/ops/units').catch(() => Promise.resolve({ success: true, nodes: [
+  liveUnits: () => api.get('/api/ops/units').then(r => r.data).catch(() => Promise.resolve({ success: true, nodes: [
     { id: 'ALPHA_1', x: 25, y: 45 },
     { id: 'BETA_2', x: 60, y: 30 },
     { id: 'SIGMA_RES', x: 15, y: 80 }
