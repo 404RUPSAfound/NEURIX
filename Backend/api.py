@@ -91,10 +91,32 @@ class TacticalLedger:
 # NEURIX MASTER COMMAND: API INITIALIZATION
 # ─────────────────────────────────────────────
 
+import asyncio
+
+async def sentinel_background_task():
+    while True:
+        try:
+            logger.info("🛰️ TRIGGERING BACKGROUND SENTINEL PIPELINE (USGS/GDACS/IMD)")
+            db_gen = get_db()
+            db = next(db_gen)
+            eq_count = SentinelEngine.sync_earthquakes(db)
+            gdacs_count = SentinelEngine.sync_global_alerts(db)
+            imd_count = getattr(SentinelEngine, 'sync_imd_cyclones', lambda x: 0)(db)
+            
+            logger.info(f"✅ SYNCHRONIZED: {eq_count} Earthquakes, {gdacs_count} Global Alerts, {imd_count} IMD Warnings")
+            db.close()
+        except Exception as e:
+            logger.error(f"Background Sentinel Error: {e}")
+        
+        # Sync every 15 minutes
+        await asyncio.sleep(900)
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db(); init_users(); logger.info("🛡️  NEURIX OPERATIONAL_OPS_ENGINE LIVE")
+    task = asyncio.create_task(sentinel_background_task())
     yield
+    task.cancel()
 
 app = FastAPI(title="NEURIX Ops Core", version="2.8.0", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
@@ -1806,31 +1828,96 @@ def get_nearby_map_assets(lat: float = 28.6139, lng: float = 77.2090, radius: fl
     except Exception as e:
         return {"success": False, "error": str(e)}
 
-@app.get("/api/dashboard/stats")
-def get_dashboard_stats(lat: float = 28.6139, lng: float = 77.2090, radius: float = 50):
-    """
-    HUD Data Aggregator: Returns counts for tactical assets in the sector.
-    """
+# ── MISSION-CRITICAL REAL DATA ENGINES ──────────────────────────
+
+@app.get("/api/weather")
+def get_live_weather(lat: float, lon: float):
+    """Weather Intelligence: Proxies OpenWeatherMap for ground-level metrics."""
+    api_key = os.getenv("OPENWEATHER_API_KEY")
+    if not api_key:
+        return {
+            "temp": "28°C", "feels_like": "30°C", "condition": "CLEAR", 
+            "humidity": 45, "wind_speed": 5, "risk": "NO_DATA (CHECK_API_KEY)"
+        }
+    
     try:
-        from core.india_hospitals import get_nearby_hospitals
-        assets = get_nearby_hospitals(lat, lng, radius_km=radius)
+        url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={api_key}&units=metric"
+        r = requests.get(url, timeout=5)
+        data = r.json()
         
-        # Real calculation from sectoral data
-        medical = len([a for a in assets if a.get("category") in ["HOSPITAL", "PHARMACY"]])
-        ambulances = max(1, medical // 10) # Simulated live units based on infrastructure density
-        field_ops = 8 # Command Node status (Fixed Baseline)
-        disasters = 0 # Active sector status (LOCKED)
+        main = data.get("main", {})
+        temp = main.get("temp")
+        wind = data.get("wind", {}).get("speed", 0)
+        weather_id = data.get("weather", [{}])[0].get("id", 800)
+        
+        risk = "CLEAR"
+        if 200 <= weather_id <= 299 or wind > 15:
+            risk = "STORM_RISK"
+        elif 500 <= weather_id <= 599:
+            risk = "FLOOD_RISK"
+            
+        return {
+            "success": True,
+            "temp": f"{round(temp)}°C",
+            "feels_like": f"{round(main.get('feels_like', temp))}°C",
+            "condition": data.get("weather", [{}])[0].get("main", "CLEAR").upper(),
+            "humidity": main.get("humidity"),
+            "wind_speed": wind,
+            "risk": risk,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Weather Fetch Failed: {e}")
+        return {"success": False, "error": "Telemetry Interrupted"}
+
+@app.post("/api/user/heartbeat")
+def update_tactical_heartbeat(lat: float, lon: float, user: Dict = Depends(verify_token), db: Session = Depends(get_db)):
+    """Tactical Heartbeat: Updates node coordinates and activity timestamp."""
+    user_id = user.get("sub")
+    db_user = db.query(models.User).filter(models.User.id == int(user_id)).first()
+    if db_user:
+        db_user.last_latitude = lat
+        db_user.last_longitude = lon
+        db_user.last_active_at = datetime.utcnow()
+        db.commit()
+    return {"success": True}
+
+@app.get("/api/dashboard/stats")
+def get_dashboard_stats(lat: float = 28.6139, lng: float = 77.2090, radius_km: float = 5):
+    """HUD Data Aggregator: Returns counts for live tactical assets and verified peers."""
+    db: Session = next(get_db())
+    try:
+        # 1. Real Peer Count (Nearby Operators within 5km, active in last 10 mins)
+        cutoff = datetime.utcnow() - timedelta(minutes=10)
+        active_nodes = db.query(models.User).filter(
+            models.User.last_active_at >= cutoff
+        ).all()
+        
+        peers_count = 0
+        for node in active_nodes:
+            if node.last_latitude and node.last_longitude:
+                dist = haversine_km(lat, lng, node.last_latitude, node.last_longitude)
+                if dist <= radius_km:
+                    peers_count += 1
+        
+        # 2. Real Hospital Data (OSM)
+        assets = fetch_osm_hospitals(lat, lng, radius_m=radius_km * 1000)
+        medical = len([a for a in assets if "hospital" in a.get("name", "").lower()])
+        
+        # 3. Disasters (DisasterReport table)
+        disasters = db.query(models.DisasterReport).count()
         
         return {
             "success": True, 
             "stats": {
                 "disasters": disasters,
                 "medical": medical,
-                "ambulances": ambulances,
-                "field_ops": field_ops
+                "ambulances": max(1, medical // 3),
+                "field_ops": peers_count
             }
         }
     except Exception as e:
+        logger.error(f"Dashboard Stats Aggregation Failed: {e}")
         return {"success": False, "error": str(e)}
 
 # ── MISSION-CRITICAL NDMA SOP REGISTRY ──────────────────────────
@@ -1996,7 +2083,14 @@ async def scan_tactical_document(file: UploadFile = File(...)):
             # PDF Processing with PyMuPDF
             doc = fitz.open(stream=content, filetype="pdf")
             for page in doc:
-                extracted_text += page.get_text()
+                text = page.get_text()
+                if not text.strip():
+                    # Scanned PDF Fallback - OCR the page
+                    pix = page.get_pixmap()
+                    img_bytes = pix.tobytes("png")
+                    img = Image.open(io.BytesIO(img_bytes))
+                    text = pytesseract.image_to_string(img)
+                extracted_text += text + "\n"
             doc.close()
         elif any(filename.endswith(ext) for ext in [".png", ".jpg", ".jpeg"]):
             # Image Processing with Tesseract
@@ -2012,24 +2106,89 @@ async def scan_tactical_document(file: UploadFile = File(...)):
         anthropic_key = getattr(settings, "ANTHROPIC_API_KEY", "")
         if anthropic_key:
             client = Anthropic(api_key=anthropic_key)
-            system = "You are a TACTICAL RECON UNIT. Convert raw document text into a structured SITREP (Summary, Affected Area, Priority, Action Items)."
+            system = (
+                "You are the NEURIX STRATEGIC INTELLIGENCE ENGINE. "
+                "Your mission is to parse raw, messy OCR/PDF text from field reports into a highly structured SITREP. "
+                "Structure: "
+                "1. [OPERATIONAL SUMMARY] - Brief context. "
+                "2. [AFFECTED METRICS] - Casualties, infrastructure damage. "
+                "3. [TACTICAL PRIORITY] - CRITICAL/HIGH/MEDIUM. "
+                "4. [MISSION ACTION ITEMS] - List of 5 immediate steps. "
+                "Be extremely precise and use tactical terminology."
+            )
+            # IMPROVED STRATEGIC SYNTHESIS CALL
             res = client.messages.create(
-                max_tokens=1024,
+                max_tokens=1500,
                 system=system,
-                messages=[{"role": "user", "content": extracted_text[:10000]}],
+                messages=[{"role": "user", "content": f"PROCESS FIELD INTEL:\n\n{extracted_text[:12000]}"}],
                 model="claude-3-haiku-20240307"
             )
+            
+            analysis_text = res.content[0].text
+            extracted_coords = []
+            
+            # Simple Regex for Lat/Long extraction (e.g. 28.6139, 77.2090)
+            coord_matches = re.findall(r"(\d{1,2}\.\d{4,6})\s*[Nn]?,?\s*(\d{1,3}\.\d{4,6})\s*[Ee]?", extracted_text)
+            if coord_matches:
+               extracted_coords = [{"lat": float(c[0]), "lng": float(c[1])} for c in coord_matches[:3]]
+
             return {
                 "success": True,
-                "analysis": res.content[0].text,
-                "raw_preview": extracted_text[:500] if len(extracted_text) > 500 else extracted_text,
-                "engine": "NEURIX_OCR_CLAUDE"
+                "analysis": analysis_text,
+                "coordinates": extracted_coords,
+                "raw_preview": extracted_text[:1000] if len(extracted_text) > 1000 else extracted_text,
+                "engine": "NEURIX_GENESIS_OCR_ALPHA"
             }
             
         return {"success": True, "raw_text": extracted_text[:2000], "engine": "RAW_OCR"}
         
     except Exception as e:
         logger.error(f"Scan Failure: {e}")
+        return {"success": False, "error": str(e)}
+
+@app.post("/api/scan/voice")
+async def scan_tactical_voice(file: UploadFile = File(...)):
+    """
+    Ingests voice report (.m4a/.mp3/.wav) and transcribes using Faster-Whisper.
+    """
+    try:
+        content = await file.read()
+        temp_path = f"tmp_voice_{uuid.uuid4()}.m4a"
+        with open(temp_path, "wb") as f:
+             f.write(content)
+             
+        # Initialization of Whisper (Lazy Load)
+        from faster_whisper import WhisperModel
+        model_size = "tiny" # Smallest/Fastest for tactical deployment
+        model = WhisperModel(model_size, device="cpu", compute_type="int8") # CPU-safe execution
+        
+        segments, info = model.transcribe(temp_path, beam_size=5)
+        transcription = " ".join([s.text for s in segments])
+        
+        os.remove(temp_path)
+
+        # Analyze with Claude for SITREP conversion if possible
+        anthropic_key = getattr(settings, "ANTHROPIC_API_KEY", "")
+        if anthropic_key and len(transcription) > 10:
+            client = Anthropic(api_key=anthropic_key)
+            res = client.messages.create(
+                max_tokens=1000,
+                system="You are the NEURIX COMMAND VOICE ANALYZER. Convert this messy field audio transcript into a structured SITREP grid.",
+                messages=[{"role": "user", "content": f"TRANSCRIPT:\n{transcription}"}],
+                model="claude-3-haiku-20240307"
+            )
+            return {
+                "success": True,
+                "transcription": transcription,
+                "analysis": res.content[0].text,
+                "engine": "NEURIX_WHISPER_VOICE_v1"
+            }
+
+        return {"success": True, "transcription": transcription, "engine": "RAW_WHISPER"}
+        
+    except Exception as e:
+        logger.error(f"Voice Scan Failure: {e}")
+        if 'temp_path' in locals() and os.path.exists(temp_path): os.remove(temp_path)
         return {"success": False, "error": str(e)}
 
     try:

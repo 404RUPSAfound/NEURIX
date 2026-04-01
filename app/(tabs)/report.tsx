@@ -1,665 +1,234 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Dimensions } from 'react-native';
-import { BlurView } from 'expo-blur';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator, Dimensions, Animated, Platform } from 'react-native';
+import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeInUp, FadeIn, Easing, withRepeat, withTiming, useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
-import { BrainCircuit, UploadCloud, FileText, AlertTriangle, CheckCircle, Clock, ShieldAlert, ListChecks, MapPin, Database, Users } from 'lucide-react-native';
+import { BlurView } from 'expo-blur';
+import { 
+  FileText, ArrowLeft, Mic, Image as ImageIcon, 
+  Upload, Send, MapPin, Zap, Brain, ShieldAlert,
+  Clock, Trash2, CheckCircle2, Info, RefreshCcw,
+  Database, Activity, Scan
+} from 'lucide-react-native';
 import { DESIGN } from '@/constants/design';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as DocumentPicker from 'expo-document-picker';
+import * as ImagePicker from 'expo-image-picker';
+import { Audio } from 'expo-av';
+import * as Location from 'expo-location';
+import * as Haptics from 'expo-haptics';
+import { mapAPI } from '@/Store/api';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
-type TabState = 'UPLOAD' | 'PROCESSING' | 'RESULTS';
-type ResultTab = 'CARDS' | 'TIMELINE' | 'RESOURCES';
-
-export default function ReportScreen() {
-  const [activeTab, setActiveTab] = useState<TabState>('UPLOAD');
-  const [resultSubTab, setResultSubTab] = useState<ResultTab>('CARDS');
+/**
+ * UNIFIED TACTICAL HYBRID (CLASSIC + ELITE)
+ * 
+ * Merges the classic "Manual Entry" aesthetic with high-fidelity "Elite Asset Grid".
+ * Provides real-time visual feedback during neural scanning.
+ */
+export default function TacticalHybrid() {
+  const router = useRouter();
   
-  // Form State
-  const [disasterType, setDisasterType] = useState('Flood');
-  const [severity, setSeverity] = useState('HIGH');
-  const [people, setPeople] = useState('100');
-  const [location, setLocation] = useState('Mohali Sector 62');
-  const [description, setDescription] = useState('Water rising rapidly. Roads blocked. Expected to breach 4ft.');
+  // Data States
+  const [description, setDescription] = useState('');
+  const [severity, setSeverity] = useState('high');
+  const [peopleAffected, setPeopleAffected] = useState('100');
+  const [locationName, setLocationName] = useState('Search Sector 4-D');
+  
+  // Asset States
+  const [file, setFile] = useState<any>(null);
+  const [image, setImage] = useState<any>(null);
+  const [voiceUri, setVoiceUri] = useState<string | null>(null);
 
-  // AI Response Data
-  const [aiData, setAiData] = useState<any>(null);
+  // Elite Scanning States
+  const [scanning, setScanning] = useState(false);
+  const [scanStatus, setScanStatus] = useState('READY');
+  const scanProgress = useRef(new Animated.Value(0)).current;
 
-  // Pulse Animation for Processing
-  const pulseVal = useSharedValue(0.5);
   useEffect(() => {
-    pulseVal.value = withRepeat(
-      withTiming(1, { duration: 1000, easing: Easing.inOut(Easing.ease) }),
-      -1,
-      true
-    );
+    (async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === 'granted') {
+        let loc = await Location.getCurrentPositionAsync({});
+        setLocationName(`${loc.coords.latitude.toFixed(4)}N, ${loc.coords.longitude.toFixed(4)}E`);
+      }
+    })();
   }, []);
 
-  const pulseStyle = useAnimatedStyle(() => ({
-    opacity: pulseVal.value,
-    transform: [{ scale: 0.95 + (pulseVal.value * 0.05) }]
-  }));
-
-  const handleAnalyze = async () => {
-    setActiveTab('PROCESSING');
-    
+  const runNeuralExtraction = async (uri: string, name: string, type: string) => {
     try {
-      const token = await AsyncStorage.getItem('neurix_token');
-      const formData = new FormData();
-      formData.append('disaster_type', disasterType);
-      formData.append('severity', severity);
-      formData.append('people_affected', people);
-      formData.append('location', location);
-      formData.append('description', description);
-      formData.append('input_type', 'manual');
-
-      const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'http://127.0.0.1:8001';
+      setScanning(true);
+      setScanStatus('UPLOADING...');
+      Animated.timing(scanProgress, { toValue: 1, duration: 4000, useNativeDriver: false }).start();
       
-      const res = await fetch(`${apiUrl}/analyze`, {
-        method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: formData,
-      });
-
-      const data = await res.json();
-      console.log('AI System Response:', data);
-      
-      if(data.success) {
-        setAiData(data);
-        setTimeout(() => setActiveTab('RESULTS'), 1000); // Small enforced delay for dramatic effect
+      let fileToUpload: any;
+      if (Platform.OS === 'web') {
+          const response = await fetch(uri);
+          const blob = await response.blob();
+          fileToUpload = new File([blob], name, { type });
       } else {
-        alert("Failed to connect to AI Core. Are you offline?");
-        setActiveTab('UPLOAD');
+          fileToUpload = { uri, name, type };
       }
+
+      setScanStatus('PARSING...');
+      const res = await mapAPI.scanDocument(fileToUpload);
+      if (res.success) {
+          setScanStatus('SYNTHESIZING...');
+          const intel = res.analysis || res.raw_text || "";
+          setDescription(prev => (prev ? prev + "\n\n" : "") + "[NEURAL_INTEL]: " + intel.slice(0, 800));
+          if (intel.match(/\d+/)) setPeopleAffected(intel.match(/\d+/)![0]);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+      setScanning(false);
+      scanProgress.setValue(0);
     } catch (e) {
-      console.error(e);
-      alert("System Offline. Falling back to local Tactical Cache...");
-      setActiveTab('UPLOAD');
+      setScanning(false);
+      console.log("Intel link failure.");
     }
   };
 
-  const renderUploadTab = () => (
-    <Animated.ScrollView entering={FadeInUp.duration(600).springify()} contentContainerStyle={styles.scrollContent}>
-      <View style={styles.header}>
-        <BrainCircuit color={DESIGN.primary} size={40} />
-        <Text style={styles.title}>NEURIX INTELLIGENCE</Text>
-        <Text style={styles.subtitle}>Claude-3 / Ollama Synthesis Engine</Text>
-      </View>
+  const pickPDF = async () => {
+    const res = await DocumentPicker.getDocumentAsync({ type: 'application/pdf' });
+    if (!res.canceled) {
+      setFile(res.assets[0]);
+      await runNeuralExtraction(res.assets[0].uri, res.assets[0].name, 'application/pdf');
+    }
+  };
 
-      <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <FileText color={DESIGN.primary} size={20} />
-          <Text style={styles.cardTitle}>TACTICAL INPUT</Text>
-        </View>
+  const pickPhoto = async () => {
+    const res = await ImagePicker.launchImageLibraryAsync({ quality: 0.8 });
+    if (!res.canceled) {
+      setImage(res.assets[0]);
+      await runNeuralExtraction(res.assets[0].uri, res.assets[0].fileName || 'recon.jpg', 'image/jpeg');
+    }
+  };
 
-        <Text style={styles.label}>Disaster Type</Text>
-        <View style={styles.rowGrid}>
-          {['Flood', 'Earthquake', 'Fire', 'Other'].map(type => (
-            <TouchableOpacity 
-              key={type} 
-              style={[styles.chip, disasterType === type && styles.chipActive]}
-              onPress={() => setDisasterType(type)}
-            >
-              <Text style={[styles.chipText, disasterType === type && styles.chipTextActive]}>{type}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <Text style={styles.label}>Severity Level</Text>
-        <View style={styles.rowGrid}>
-          {['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].map(level => {
-            const isCrit = level === 'CRITICAL';
-            return (
-              <TouchableOpacity 
-                key={level} 
-                style={[
-                  styles.chip, 
-                  severity === level && styles.chipActive,
-                  isCrit && severity === level && { backgroundColor: DESIGN.danger, borderColor: DESIGN.danger }
-                ]}
-                onPress={() => setSeverity(level)}
-              >
-                <Text style={[styles.chipText, severity === level && styles.chipTextActive]}>{level}</Text>
-              </TouchableOpacity>
-            )
-          })}
-        </View>
-
-        <Text style={styles.label}>Location / GPS Target</Text>
-        <TextInput 
-          style={styles.input} 
-          value={location} 
-          onChangeText={setLocation} 
-          placeholderTextColor="#555"
-        />
-
-        <Text style={styles.label}>Estimated People Affected</Text>
-        <TextInput 
-          style={styles.input} 
-          value={people} 
-          onChangeText={setPeople} 
-          keyboardType="numeric" 
-          placeholderTextColor="#555"
-        />
-
-        <Text style={styles.label}>Situation Description (Or wait for OCR upload)</Text>
-        <TextInput 
-          style={[styles.input, { height: 80, textAlignVertical: 'top' }]} 
-          value={description} 
-          onChangeText={setDescription} 
-          multiline 
-          placeholderTextColor="#555"
-        />
-
-        <TouchableOpacity style={styles.scanBtn}>
-          <UploadCloud color={DESIGN.primary} size={20} style={{marginRight: 8}} />
-          <Text style={styles.scanBtnText}>UPLOAD FIELD PDF / IMAGE</Text>
-        </TouchableOpacity>
-      </View>
-
-      <TouchableOpacity style={styles.analyzeBtn} onPress={handleAnalyze}>
-        <LinearGradient colors={[DESIGN.primary, '#805A00']} style={styles.gradientBg} start={{x: 0, y:0}} end={{x:1, y:1}}>
-          <BrainCircuit color="#fff" size={24} style={{marginRight: 10}} />
-          <Text style={styles.analyzeBtnText}>INITIATE NEURIX ANALYSIS</Text>
-        </LinearGradient>
-      </TouchableOpacity>
-    </Animated.ScrollView>
-  );
-
-  const renderProcessingTab = () => (
-    <Animated.View entering={FadeIn.duration(500)} style={styles.processingContainer}>
-      <Animated.View style={pulseStyle}>
-        <BrainCircuit color={DESIGN.primary} size={120} />
-      </Animated.View>
-      <Text style={styles.processingTitle}>SYNTHESIZING PROTOCOLS</Text>
-      <Text style={styles.processingSub}>Cross-referencing NDRF & Sendai Framework Database</Text>
-      
-      <View style={styles.progressBox}>
-        <View style={styles.progRow}><CheckCircle color={DESIGN.primary} size={16} /><Text style={styles.progText}> Geospatial parameters locked</Text></View>
-        <View style={styles.progRow}><CheckCircle color={DESIGN.primary} size={16} /><Text style={styles.progText}> Threat vector analyzed</Text></View>
-        <View style={styles.progRow}><ActivityIndicator color={DESIGN.primary} size="small" /><Text style={[styles.progText, {color: DESIGN.primary}]}> Generating Tactical Action Cards...</Text></View>
-      </View>
-    </Animated.View>
-  );
-
-  const renderResultsTab = () => {
-    if(!aiData) return null;
-    
-    return (
-      <Animated.View entering={FadeInUp.duration(600).springify()} style={styles.resultsContainer}>
-        {/* Results Header */}
-        <View style={styles.resultsHeader}>
-          <Text style={{color: '#999', fontSize: 12}}>SITUATION CLASSIFICATION</Text>
-          <Text style={styles.resDocTitle}>{aiData.situation?.title}</Text>
-          <View style={{flexDirection: 'row', alignItems: 'center', marginTop: 8, flexWrap: 'wrap'}}>
-            <View style={styles.statusBadge}><AlertTriangle color={DESIGN.primary} size={14} /><Text style={styles.statusBadgeText}>{aiData.situation?.severity}</Text></View>
-            <View style={styles.statusBadge}><Users color={DESIGN.primary} size={14} /><Text style={styles.statusBadgeText}>{aiData.situation?.stats?.affected} AT RISK</Text></View>
-            <View style={[styles.statusBadge, {borderColor: DESIGN.success}]}><CheckCircle color={DESIGN.success} size={14} /><Text style={[styles.statusBadgeText, {color: DESIGN.success}]}>NEURIX ACCURACY: {aiData.situation?.stats?.confidence}%</Text></View>
-          </View>
-        </View>
-
-        {/* Tab Switcher */}
-        <View style={styles.resTabsRow}>
-          <TouchableOpacity style={[styles.resTab, resultSubTab === 'CARDS' && styles.resTabActive]} onPress={() => setResultSubTab('CARDS')}>
-            <ListChecks color={resultSubTab === 'CARDS' ? DESIGN.primary : '#666'} size={18} />
-            <Text style={[styles.resTabText, resultSubTab === 'CARDS' && {color: DESIGN.primary}]}>ACTION CARDS</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.resTab, resultSubTab === 'TIMELINE' && styles.resTabActive]} onPress={() => setResultSubTab('TIMELINE')}>
-            <Clock color={resultSubTab === 'TIMELINE' ? DESIGN.primary : '#666'} size={18} />
-            <Text style={[styles.resTabText, resultSubTab === 'TIMELINE' && {color: DESIGN.primary}]}>TIMELINE</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.resTab, resultSubTab === 'RESOURCES' && styles.resTabActive]} onPress={() => setResultSubTab('RESOURCES')}>
-            <Database color={resultSubTab === 'RESOURCES' ? DESIGN.primary : '#666'} size={18} />
-            <Text style={[styles.resTabText, resultSubTab === 'RESOURCES' && {color: DESIGN.primary}]}>RESOURCES</Text>
-          </TouchableOpacity>
-        </View>
-
-        <ScrollView contentContainerStyle={{paddingBottom: 150}}>
-          {resultSubTab === 'CARDS' && (
-            <View style={{padding: 20}}>
-              {(aiData.action_cards || []).map((card: any, idx: number) => (
-                <View key={idx} style={styles.actionCard}>
-                  <View style={styles.acHeaderRow}>
-                    <Text style={[styles.acPriority, {color: card.color || DESIGN.primary}]}>● {card.priority}</Text>
-                    <Text style={styles.acTime}>{card.time}</Text>
-                  </View>
-                  <Text style={styles.acTitle}>{card.title}</Text>
-                  <Text style={styles.acDetail}>{card.detail}</Text>
-                  <TouchableOpacity style={styles.acBtn}>
-                    <Text style={styles.acBtnText}>ASSIGN TEAM</Text>
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </View>
-          )}
-
-          {resultSubTab === 'TIMELINE' && (
-            <View style={{padding: 20}}>
-              {(aiData.timeline || []).map((t: any, idx: number) => (
-                <View key={idx} style={styles.timelineRow}>
-                  <View style={styles.tlTimeCol}><Text style={styles.tlTime}>{t.time}</Text></View>
-                  <View style={styles.tlLine}><View style={[styles.tlDot, t.active && {backgroundColor: DESIGN.primary, borderColor: DESIGN.primary}]} /></View>
-                  <View style={styles.tlLabelCol}><Text style={[styles.tlLabel, t.active && {color: '#fff'}]}>{t.label}</Text></View>
-                </View>
-              ))}
-            </View>
-          )}
-
-          {resultSubTab === 'RESOURCES' && (
-            <View style={{padding: 20, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between'}}>
-              {(aiData.resources || []).map((r: any, idx: number) => (
-                <View key={idx} style={styles.resourceCard}>
-                  <Text style={styles.resVal}>{r.value}</Text>
-                  <Text style={styles.resLabel}>{r.label}</Text>
-                  <Text style={styles.resUnit}>{r.unit}</Text>
-                </View>
-              ))}
-            </View>
-          )}
-
-        </ScrollView>
-        
-        {/* Floating Action */}
-        <View style={styles.fabBottom}>
-          <TouchableOpacity style={styles.confirmBtn} onPress={() => setActiveTab('UPLOAD')}>
-            <ShieldAlert color="#fff" size={20} />
-            <Text style={styles.confirmBtnText}>COMMANDER CONFIRMS PLAN</Text>
-          </TouchableOpacity>
-        </View>
-      </Animated.View>
-    );
+  const goAnalysis = () => {
+    if (!description && !file) {
+      Alert.alert('DATA_REQUIRED', 'Intelligence link requires documentation or a situation report.');
+      return;
+    }
+    router.push({
+      pathname: '/processing',
+      params: { description, severity, people_affected: peopleAffected, location: locationName, fileUri: file?.uri || '' }
+    });
   };
 
   return (
-    <View style={styles.container}>
-      {activeTab === 'UPLOAD' && renderUploadTab()}
-      {activeTab === 'PROCESSING' && renderProcessingTab()}
-      {activeTab === 'RESULTS' && renderResultsTab()}
+    <View style={s.container}>
+      <LinearGradient colors={['#02050A', '#050A19', '#081033']} style={StyleSheet.absoluteFill} />
+      
+      <View style={s.header}>
+        <View>
+          <Text style={s.headerTitle}>NEURIX HUB</Text>
+          <Text style={s.headerSub}>SITUATIONAL_HYBRID_ENGINE</Text>
+        </View>
+        <TouchableOpacity style={s.refreshCircle}>
+          <RefreshCcw color="#D4AF37" size={22} />
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
+        
+        {/* SECTION: PEOPLE (CLASSIC) */}
+        <View style={s.section}>
+          <Text style={s.sectionLabel}>ESTIMATED PEOPLE AFFECTED</Text>
+          <View style={s.classicInputBox}>
+              <TextInput style={s.classicInput} value={peopleAffected} onChangeText={setPeopleAffected} keyboardType="numeric" />
+          </View>
+        </View>
+
+        {/* SECTION: DESCRIPTION (CLASSIC) */}
+        <View style={s.section}>
+          <Text style={s.sectionLabel}>MISSION DEBRIEF (LIVE TRANSCRIPTION OR MANUAL)</Text>
+          <View style={s.classicTextAreaBox}>
+              <TextInput 
+                style={s.textArea} 
+                multiline 
+                value={description} 
+                onChangeText={setDescription}
+                placeholder="Sector Delta experiencing breach. Tactical dispatch required..."
+                placeholderTextColor="rgba(255,255,255,0.2)"
+              />
+          </View>
+        </View>
+
+        {/* SECTION: ASSET INGESTION (ELITE GRID) */}
+        <View style={s.section}>
+          <View style={s.assetHeader}>
+            <Text style={s.sectionLabel}>MISSION ASSET INGESTION</Text>
+            {scanning && <View style={s.liveBadge}><ActivityIndicator size="small" color={DESIGN.primary} /><Text style={s.liveText}>{scanStatus}</Text></View>}
+          </View>
+
+          {/* ELITE SCAN FEEDBACK BAR */}
+          {scanning && (
+            <View style={s.progressBarWrapper}>
+              <Animated.View style={[s.progressBar, { width: scanProgress.interpolate({ inputRange:[0,1], outputRange:['0%','100%'] }) }]} />
+            </View>
+          )}
+
+          <View style={s.assetGrid}>
+             <TouchableOpacity style={[s.assetBtn, file && s.assetBtnSynced]} onPress={pickPDF}>
+                <FileText color={file ? DESIGN.info : DESIGN.textMuted} size={28} />
+                <Text style={s.assetBtnText}>UPLOAD PDF</Text>
+                {file && <View style={s.checkBadge}><CheckCircle2 size={10} color="#FFF" /></View>}
+             </TouchableOpacity>
+             <TouchableOpacity style={[s.assetBtn, image && s.assetBtnSynced]} onPress={pickPhoto}>
+                <ImageIcon color={image ? DESIGN.primary : DESIGN.textMuted} size={28} />
+                <Text style={s.assetBtnText}>PHOTO RECON</Text>
+                {image && <View style={s.checkBadge}><CheckCircle2 size={10} color="#FFF" /></View>}
+             </TouchableOpacity>
+             <TouchableOpacity style={s.assetBtn}>
+                <Mic color={DESIGN.textMuted} size={28} />
+                <Text style={s.assetBtnText}>VOICE_NET</Text>
+             </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* SECTION: CORE TRIGGER (CLASSIC GRADIENT) */}
+        <TouchableOpacity style={s.launchBtn} onPress={goAnalysis}>
+           <LinearGradient colors={[DESIGN.danger, '#C1870B']} start={{x:0, y:0}} end={{x:1, y:1}} style={s.launchInner}>
+              <Scan color="#FFF" size={26} />
+              <Text style={s.launchText}>INITIATE NEURAL SYNTHESIS</Text>
+           </LinearGradient>
+        </TouchableOpacity>
+
+        <View style={{ height: 120 }} />
+      </ScrollView>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#05070A',
-  },
-  scrollContent: {
-    padding: 24,
-    paddingTop: 60,
-    paddingBottom: 150,
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 30,
-  },
-  title: {
-    color: '#fff',
-    fontSize: 22,
-    fontFamily: 'Inter_700Bold',
-    marginTop: 15,
-    letterSpacing: 2,
-  },
-  subtitle: {
-    color: DESIGN.textMuted,
-    fontSize: 12,
-    fontFamily: 'Roboto_400Regular',
-    marginTop: 5,
-    letterSpacing: 1,
-  },
-  card: {
-    backgroundColor: DESIGN.bgCard,
-    borderRadius: 16,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  cardTitle: {
-    color: '#ccc',
-    fontSize: 14,
-    fontFamily: 'Inter_600SemiBold',
-    marginLeft: 10,
-    letterSpacing: 1,
-  },
-  label: {
-    color: '#888',
-    fontSize: 12,
-    fontFamily: 'Roboto_500Medium',
-    marginBottom: 8,
-    marginTop: 15,
-    textTransform: 'uppercase',
-  },
-  rowGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  chip: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
-    backgroundColor: 'rgba(255,255,255,0.03)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  chipActive: {
-    backgroundColor: 'rgba(212, 175, 55, 0.15)',
-    borderColor: DESIGN.primary,
-  },
-  chipText: {
-    color: '#888',
-    fontSize: 12,
-    fontFamily: 'Inter_600SemiBold',
-  },
-  chipTextActive: {
-    color: DESIGN.primary,
-  },
-  input: {
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 8,
-    padding: 15,
-    color: '#fff',
-    fontFamily: 'Roboto_400Regular',
-    fontSize: 14,
-  },
-  scanBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 25,
-    padding: 15,
-    borderRadius: 8,
-    borderWidth: 1.5,
-    borderColor: DESIGN.primary,
-    borderStyle: 'dashed',
-    backgroundColor: 'rgba(212,175,55,0.05)',
-  },
-  scanBtnText: {
-    color: DESIGN.primary,
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 13,
-    letterSpacing: 1,
-  },
-  analyzeBtn: {
-    marginTop: 30,
-    borderRadius: 12,
-    overflow: 'hidden',
-    shadowColor: DESIGN.primary,
-    shadowOpacity: 0.4,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 10,
-  },
-  gradientBg: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 18,
-  },
-  analyzeBtnText: {
-    color: '#fff',
-    fontFamily: 'Inter_700Bold',
-    fontSize: 15,
-    letterSpacing: 1,
-  },
+const s = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#02050A' },
+  header: { paddingTop: 60, paddingHorizontal: 30, paddingBottom: 25, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  headerTitle: { fontFamily: DESIGN.fontDisplayBlack, color: '#FFF', fontSize: 24, letterSpacing: 2 },
+  headerSub: { fontFamily: DESIGN.fontLabelSemiBold, color: DESIGN.textMuted, fontSize: 9, letterSpacing: 1, marginTop: 4 },
+  refreshCircle: { width: 54, height: 54, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.02)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
+
+  scroll: { paddingHorizontal: 24, paddingTop: 10 },
+  section: { marginBottom: 32 },
+  sectionLabel: { fontFamily: DESIGN.fontLabelSemiBold, color: 'rgba(255,255,255,0.3)', fontSize: 9, letterSpacing: 1.5, marginBottom: 12 },
   
-  // Processing Tab
-  processingContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 40,
-  },
-  processingTitle: {
-    color: '#fff',
-    fontSize: 20,
-    fontFamily: 'Inter_700Bold',
-    marginTop: 40,
-    letterSpacing: 2,
-  },
-  processingSub: {
-    color: '#888',
-    marginTop: 10,
-    textAlign: 'center',
-    fontFamily: 'Roboto_400Regular',
-  },
-  progressBox: {
-    marginTop: 40,
-    width: '100%',
-    backgroundColor: 'rgba(255,255,255,0.03)',
-    borderRadius: 12,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
-  },
-  progRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  progText: {
-    color: '#aaa',
-    marginLeft: 15,
-    fontSize: 13,
-    fontFamily: 'Inter_500Medium',
-  },
+  classicInputBox: { height: 72, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.02)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)', paddingHorizontal: 20, justifyContent: 'center' },
+  classicInput: { fontFamily: DESIGN.fontDisplayBlack, color: '#FFF', fontSize: 22 },
 
-  // Results Tab
-  resultsContainer: {
-    flex: 1,
-  },
-  resultsHeader: {
-    padding: 24,
-    paddingTop: 60,
-    backgroundColor: DESIGN.bgCard,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
-  },
-  resDocTitle: {
-    color: '#fff',
-    fontSize: 22,
-    fontFamily: 'Inter_700Bold',
-    marginTop: 5,
-  },
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: DESIGN.primary,
-    backgroundColor: 'rgba(212,175,55,0.1)',
-    marginRight: 10,
-    marginTop: 10,
-  },
-  statusBadgeText: {
-    color: DESIGN.primary,
-    fontSize: 10,
-    fontFamily: 'Inter_700Bold',
-    marginLeft: 6,
-  },
-  resTabsRow: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.1)',
-  },
-  resTab: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 18,
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
-  },
-  resTabActive: {
-    borderBottomColor: DESIGN.primary,
-  },
-  resTabText: {
-    color: '#666',
-    fontSize: 12,
-    fontFamily: 'Inter_600SemiBold',
-    marginLeft: 8,
-    letterSpacing: 1,
-  },
+  classicTextAreaBox: { height: 140, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.01)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)', padding: 20 },
+  textArea: { fontFamily: DESIGN.fontBold, color: 'rgba(255,255,255,0.8)', fontSize: 15, height: '100%', textAlignVertical: 'top' },
 
-  // Cards
-  actionCard: {
-    backgroundColor: 'rgba(20, 20, 22, 0.8)',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    borderLeftWidth: 4,
-  },
-  acHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-  },
-  acPriority: {
-    fontSize: 12,
-    fontFamily: 'Inter_700Bold',
-    letterSpacing: 1,
-  },
-  acTime: {
-    color: '#666',
-    fontSize: 12,
-    fontFamily: 'Roboto_400Regular',
-  },
-  acTitle: {
-    color: '#fff',
-    fontSize: 16,
-    fontFamily: 'Inter_600SemiBold',
-    marginBottom: 8,
-  },
-  acDetail: {
-    color: '#999',
-    fontSize: 13,
-    fontFamily: 'Roboto_400Regular',
-    lineHeight: 20,
-    marginBottom: 15,
-  },
-  acBtn: {
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    paddingVertical: 8,
-    borderRadius: 6,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  acBtnText: {
-    color: '#ddd',
-    fontSize: 11,
-    fontFamily: 'Inter_600SemiBold',
-    letterSpacing: 1,
-  },
+  assetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  liveBadge: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  liveText: { fontFamily: DESIGN.fontLabelSemiBold, color: DESIGN.primary, fontSize: 8 },
 
-  // Timeline
-  timelineRow: {
-    flexDirection: 'row',
-    minHeight: 60,
-  },
-  tlTimeCol: {
-    width: 60,
-    alignItems: 'flex-end',
-    paddingRight: 15,
-    paddingTop: 2,
-  },
-  tlTime: {
-    color: '#888',
-    fontSize: 12,
-    fontFamily: 'Inter_500Medium',
-  },
-  tlLine: {
-    width: 20,
-    alignItems: 'center',
-  },
-  tlDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: '#555',
-    backgroundColor: '#05070A',
-    zIndex: 2,
-  },
-  tlLabelCol: {
-    flex: 1,
-    paddingLeft: 15,
-    paddingBottom: 30,
-    marginTop: -2,
-  },
-  tlLabel: {
-    color: '#777',
-    fontSize: 15,
-    fontFamily: 'Inter_600SemiBold',
-  },
+  progressBarWrapper: { width: '100%', height: 2, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 1, marginBottom: 20 },
+  progressBar: { height: '100%', backgroundColor: DESIGN.primary },
 
-  // Resources
-  resourceCard: {
-    width: '47%',
-    backgroundColor: 'rgba(255,255,255,0.02)',
-    padding: 20,
-    borderRadius: 12,
-    marginBottom: 15,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
-    alignItems: 'center',
-  },
-  resVal: {
-    color: '#fff',
-    fontSize: 28,
-    fontFamily: 'Inter_700Bold',
-  },
-  resLabel: {
-    color: '#aaa',
-    fontSize: 12,
-    fontFamily: 'Inter_600SemiBold',
-    marginTop: 5,
-    textTransform: 'uppercase',
-  },
-  resUnit: {
-    color: '#555',
-    fontSize: 10,
-    fontFamily: 'Roboto_400Regular',
-    marginTop: 2,
-  },
+  assetGrid: { flexDirection: 'row', gap: 12 },
+  assetBtn: { flex: 1, height: 90, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.02)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  assetBtnSynced: { borderColor: DESIGN.primary + '40', backgroundColor: DESIGN.primary + '05' },
+  assetBtnText: { fontFamily: DESIGN.fontDisplayBlack, color: 'rgba(255,255,255,0.4)', fontSize: 7, letterSpacing: 1 },
+  checkBadge: { position: 'absolute', top: 10, right: 10, backgroundColor: DESIGN.success, width: 16, height: 16, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
 
-  fabBottom: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(5,7,10,0.9)',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.1)',
-    padding: 20,
-    paddingBottom: 40,
-  },
-  confirmBtn: {
-    backgroundColor: DESIGN.success,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    borderRadius: 12,
-  },
-  confirmBtnText: {
-    color: '#fff',
-    marginLeft: 10,
-    fontFamily: 'Inter_700Bold',
-    fontSize: 14,
-    letterSpacing: 1,
-  }
+  launchBtn: { height: 72, borderRadius: 24, overflow: 'hidden', marginVertical: 15, marginBottom: 20 },
+  launchInner: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 15, paddingHorizontal: 20 },
+  launchText: { fontFamily: DESIGN.fontDisplay, color: '#FFF', fontSize: 13, letterSpacing: 2 },
 });

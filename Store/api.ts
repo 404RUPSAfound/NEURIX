@@ -241,6 +241,14 @@ export const mapAPI = {
     }
   },
   sentinelSync: () => api.post('/sentinel/sync').then((r) => r.data),
+  
+  // [MISSION_UPGRADE] Real-Mode Telemetry
+  getWeather: (lat: number, lon: number) => 
+    api.get('/api/weather', { params: { lat, lon } }).then(r => r.data),
+  
+  updateHeartbeat: (lat: number, lon: number) =>
+    api.post('/api/user/heartbeat', null, { params: { lat, lon } }).then(r => r.data),
+
   reportBlockedRoad: (payload: {
     id?: string;
     name?: string;
@@ -319,6 +327,15 @@ export const mapAPI = {
     const formData = new FormData();
     formData.append('file', file);
     const res = await api.post('/api/scan/document', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return res.data;
+  },
+  
+  scanVoice: async (file: any) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await api.post('/api/scan/voice', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
     return res.data;

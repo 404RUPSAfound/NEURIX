@@ -239,7 +239,7 @@ export default function NativeReconCommand() {
                  <Text style={styles.cardCat}>{selectedAsset.category}</Text>
                  <Text style={styles.cardTitle}>{selectedAsset.name}</Text>
                </View>
-               <TouchableOpacity onPress={() => Animated.timing(slideAnim, { toValue: height, duration: 300 }).start(() => setSelectedAsset(null))}>
+               <TouchableOpacity onPress={() => Animated.timing(slideAnim, { toValue: height, duration: 300, useNativeDriver: true }).start(() => setSelectedAsset(null))}>
                  <AlertTriangle size={22} color="#FF3D00" />
                </TouchableOpacity>
             </View>

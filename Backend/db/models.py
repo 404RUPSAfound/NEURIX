@@ -13,6 +13,12 @@ class User(Base):
     role = Column(String, default="volunteer")
     badge = Column(String, nullable=True)
     is_verified = Column(Boolean, default=False)
+    
+    # [MISSION_UPGRADE] Geospatial Tracking
+    last_latitude = Column(Float, nullable=True)
+    last_longitude = Column(Float, nullable=True)
+    last_active_at = Column(DateTime, default=datetime.utcnow)
+    
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class DisasterReport(Base):
