@@ -8,7 +8,7 @@ api_key = os.getenv("GEMINI_API_KEY")
 
 if not api_key:
     # Try hardcoded from config if .env fails
-    api_key = "AIzaSyC_NHqQzb4d3DS0RKcNsBx74LrJA1TXjv8"
+    api_key = os.environ.get("GEMINI_API_KEY", "")  # Set via .env or environment
 
 url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
 payload = {

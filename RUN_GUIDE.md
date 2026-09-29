@@ -1,28 +1,88 @@
-# 🚀 NEURIX Tactical AI Platform: Quick Start Guide
+﻿# NEURIX — Quick Start Guide
 
-This project consists of three main services that need to run in separate terminal windows.
-
-## 🟢 1. Main Backend (Python/FastAPI)
-- **Path**: `cd Backend`
-- **Install Requirements**: `pip install -r requirements.txt`
-- **Run**: `uvicorn api:app --reload --port 8000`
-
-## 🟡 2. Satellite Backend (Node.js/Express)
-- **Path**: `cd SatelliteBackend`
-- **Install Dependencies**: `npm install`
-- **Run**: `npm start`
-
-## 🔵 3. Frontend / Mission Control (React Native / Expo)
-- **Path**: (Root Project Folder)
-- **Install Dependencies**: `npm install`
-- **Run**: `npx expo start`
-  - Press **'w'** for web browser.
-  - Scan QR code with **Expo Go** app for mobile.
+This project runs three services simultaneously. Each requires its own terminal window.
 
 ---
 
-### ✅ Health Check URLs
-Once running, verify each service:
-- **Backend**: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
-- **Satellite**: [http://localhost:3000/health](http://localhost:3000/health) (or check `app.js` for exact route)
-- **Frontend**: `http://localhost:19006` (standard Expo web port)
+## 1. FastAPI Backend (Python)
+
+```bash
+cd Backend
+python -m venv venv
+venv\Scripts\activate         # Windows
+# source venv/bin/activate    # macOS / Linux
+pip install -r requirements.txt
+uvicorn api:app --reload --port 8000
+```
+
+- **API Docs**: http://127.0.0.1:8000/docs
+- **Health**: http://127.0.0.1:8000/
+
+---
+
+## 2. Satellite Tile Service (Node.js)
+
+```bash
+cd SatelliteBackend
+npm install
+npm start
+```
+
+- **Health**: http://localhost:3001/health
+- Runs on port **3001** by default (configurable via `SatelliteBackend/.env`)
+
+---
+
+## 3. Frontend (React Native / Expo)
+
+```bash
+# From the project root
+npm install
+npx expo start
+```
+
+- Press **`w`** to open in browser
+- Scan QR code with **Expo Go** app (Android/iOS)
+- Web runs on: http://localhost:8082
+
+---
+
+## Windows One-Click Start
+
+```bash
+start_neurix.bat
+```
+
+Opens all three services in separate terminal windows.
+
+---
+
+## Environment Files
+
+Before starting, set up your environment:
+
+```bash
+# Frontend
+cp .env.example .env
+
+# Backend
+cp Backend/.env.example Backend/.env
+
+# Satellite backend
+cp SatelliteBackend/.env.example SatelliteBackend/.env
+```
+
+Edit each `.env` with your actual values. See `README.md` for details.
+
+---
+
+## Optional: Offline AI (Ollama)
+
+To enable the on-device AI chat feature, install [Ollama](https://ollama.ai) and run:
+
+```bash
+ollama pull qwen2.5:0.5b
+ollama serve
+```
+
+The backend will automatically detect and use Ollama when available.

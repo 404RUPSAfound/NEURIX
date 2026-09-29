@@ -1,16 +1,33 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+# ─────────────────────────────────────────────
+# NEURIX — .gitignore
+# Covers: React Native / Expo / TypeScript / Node.js / Python / FastAPI
+# ─────────────────────────────────────────────
 
-# dependencies
+# ── Environment & Secrets ──────────────────────
+.env
+.env.*
+!.env.example
+Backend/.env
+SatelliteBackend/.env
+
+# ── Node / NPM ──────────────────────────────────
 node_modules/
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+.npm/
 
-# Expo
+# ── Expo ───────────────────────────────────────
 .expo/
 .expo-home/
 dist/
 web-build/
 expo-env.d.ts
+*.jsbundle
 
-# Native
+# ── React Native / Native Build ────────────────
+/ios/
+/android/
 .kotlin/
 *.orig.*
 *.jks
@@ -18,49 +35,82 @@ expo-env.d.ts
 *.p12
 *.key
 *.mobileprovision
+*.keystore
 
-# Metro
+# ── Metro ─────────────────────────────────────
 .metro-health-check*
 
-# debug
-npm-debug.*
-yarn-debug.*
-yarn-error.*
-
-# macOS
-.DS_Store
-*.pem
-
-# local env files
-.env*.local
-
-# typescript
-*.tsbuildinfo
-
-app-example
-
-# generated native folders
-/ios
-/android
-
-# Python
+# ── Python ────────────────────────────────────
 __pycache__/
 *.py[cod]
 *$py.class
-Backend/__pycache__/
-Backend/core/__pycache__/
-Backend/db/__pycache__/
+*.pyo
+*.pyd
+*.so
+.Python
+venv/
+.venv/
+env/
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+.mypy_cache/
+.dmypy.json
+dmypy.json
 
-# Node
-node_modules/
+# ── Databases (local SQLite) ──────────────────
+*.db
+*.sqlite
+*.sqlite3
+
+# ── Logs ──────────────────────────────────────
+*.log
+logs/
+*.log.*
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 
-# Other
-.DS_Store
-.idea/
+# ── Temporary / Debug Artifacts ───────────────
+tmp/
+*.tmp
+build_error*.txt
+bundle_error.json
+bundle_test.js
+doctor_*.txt
+metro_*.txt
+tsc_errors*.txt
+error.json
+*.zip
+seed_log.txt
+
+# ── Sensitive Data Dumps ──────────────────────
+users_list*.txt
+tactical_key.txt
+tactical_audit.json
+Backend/users_list*.txt
+Backend/tactical_*.txt
+Backend/tactical_*.json
+
+# ── IDE / Editor ──────────────────────────────
 .vscode/
+.idea/
+*.expo.code-workspace
 *.swp
 *.bak
 *~
+.DS_Store
+Thumbs.db
+
+# ── TypeScript ────────────────────────────────
+*.tsbuildinfo
+
+# ── macOS / Windows ───────────────────────────
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ── Old / Generated files ─────────────────────
+app-example/
+api_old.py

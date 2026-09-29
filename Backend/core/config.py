@@ -18,7 +18,7 @@ class Settings:
     OLLAMA_TIMEOUT: int = int(os.getenv("OLLAMA_TIMEOUT", "90"))
 
     # Gemini API / Claude API
-    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "AIzaSyC_NHqQzb4d3DS0RKcNsBx74LrJA1TXjv8")
+    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
     ANTHROPIC_API_KEY: str = os.getenv("ANTHROPIC_API_KEY", "")
 
     # Google Maps API
@@ -36,7 +36,7 @@ class Settings:
     SMTP_PORT: int = int(os.getenv("SMTP_PORT", "587"))
     SMTP_USER: str = os.getenv("SMTP_USER", "")
     SMTP_PASSWORD: str = os.getenv("SMTP_PASSWORD", "")
-    ALERT_EMAIL_RECIPIENT: str = os.getenv("ALERT_EMAIL_RECIPIENT", "rupsapandit156@gmail.com")
+    ALERT_EMAIL_RECIPIENT: str = os.getenv("ALERT_EMAIL_RECIPIENT", "")
 
     @property
     def email_configured(self) -> bool:
