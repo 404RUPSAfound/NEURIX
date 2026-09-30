@@ -1,535 +1,200 @@
-﻿# NEURIX
+# NEURIX
 
 **AI-Powered Offline-First Disaster Management Platform**
 
-NEURIX is a cross-platform mobile and web application built for emergency responders, volunteers, and disaster-affected communities. It provides AI-assisted situational awareness, field coordination tools, community reporting, and emergency SOS capabilities — all designed to function even when internet connectivity is unavailable.
+## 1. Overview
+NEURIX is a tactical disaster intelligence and emergency response platform built for first responders, NDRF personnel, and community volunteers. It provides real-time disaster alerts, geospatial routing, local utility discovery, and AI-powered survival guidance. The platform is designed with an offline-first architecture, ensuring that critical operations can continue even when connectivity is compromised.
 
-> **Project Status:** Active Development — Prototype / Portfolio Project.
-> Not a production emergency system. See [Disclaimer](#disclaimer).
+## 2. Problem Statement
+During natural disasters (earthquakes, floods, cyclones), communication infrastructure often fails. First responders and victims are left without internet access, making it difficult to coordinate rescue efforts, find nearby medical facilities, or receive actionable survival guidance. Traditional cloud-dependent applications become useless in these zero-connectivity environments.
 
----
+## 3. Solution
+NEURIX bridges this gap by functioning as a highly resilient, offline-first tactical node. By utilizing local databases (SQLite), cached geospatial map tiles, and offline-capable AI models (via local Ollama endpoints), the platform delivers critical situational awareness and automated standard operating procedures (SOPs) regardless of internet availability. When online, it syncs with global data sources (USGS, GDACS, OSM) to provide a rich, unified tactical map.
 
-## Table of Contents
+## 4. Key Features
+- **Offline-First Resilience:** Continuous operation without internet using local SQLite databases and cached map tiles.
+- **Real-Time Global Ingestion:** Automated fetching of disaster events via USGS and GDACS.
+- **Geospatial Discovery:** Locates nearby hospitals, pharmacies, and water sources using OSM and Google Places.
+- **Tactical AI Assistant:** Multi-model AI chat providing triage and survival guidance.
+- **Secure Operator Authentication:** JWT-based access with email OTP verification.
+- **Resilient Routing:** Computes emergency routes via Google Directions with OSRM fallback.
 
-- [Overview](#overview)
-- [Problem Statement](#problem-statement)
-- [Solution](#solution)
-- [Key Features](#key-features)
-- [System Architecture](#system-architecture)
-- [How It Works](#how-it-works)
-- [Tech Stack](#tech-stack)
-- [Project Structure](#project-structure)
-- [Installation](#installation)
-- [Environment Setup](#environment-setup)
-- [Running the Application](#running-the-application)
-- [API Overview](#api-overview)
-- [Offline Architecture](#offline-architecture)
-- [AI Integration](#ai-integration)
-- [Screenshots](#screenshots)
-- [Future Scope](#future-scope)
-- [Limitations](#limitations)
-- [Disclaimer](#disclaimer)
-- [License](#license)
+## 5. Actual Implemented Features
+- Cross-platform mobile frontend (iOS/Android/Web) built with React Native and Expo.
+- FastAPI backend serving AI integrations, user management, and geospatial proxying.
+- Integration with USGS Earthquake and GDACS RSS feeds for live global disaster alerts.
+- Hospital and utility discovery using OpenStreetMap (Overpass API) and Google Maps APIs.
+- AI Chat utilizing Google Gemini / Anthropic Claude, falling back to local Ollama.
+- Offline playbooks and local database persistence for caching disaster data.
+- User authentication flow using JWTs and OTPs via SMTP (Gmail).
+- OCR (Tesseract) and PDF (PyMuPDF) text extraction capabilities on the backend.
 
----
-
-## Overview
-
-NEURIX is an Expo / React Native application backed by a Python FastAPI server and a Node.js satellite tile microservice. It enables field responders and affected citizens to:
-
-- Report and analyze disaster situations via AI
-- View real-time and cached map layers
-- Access offline tactical response playbooks
-- Manage victim triage, resource inventory, and relief distribution
-- Trigger SOS events with GPS coordinates
-- Coordinate via community pins and community status updates
-- Track field units on a tactical recon screen
-
----
-
-## Problem Statement
-
-During large-scale disasters — floods, earthquakes, cyclones — standard communication infrastructure frequently fails. Internet connectivity drops. Cellular towers go down. Emergency responders lose situational awareness at the moment they need it most.
-
-Existing emergency apps assume connectivity and stop working when it is lost.
-
----
-
-## Solution
-
-NEURIX is built offline-first. It caches tactical playbooks, map data, and prior analysis locally using AsyncStorage and SQLite. When connectivity is restored, it syncs pending records back to the backend automatically.
-
-The system uses a local LLM (Ollama) for on-device AI chat and can fall back to Gemini (Google) when online.
-
----
-
-## Key Features
-
-| Feature | Description |
-|---|---|
-| **Offline Tactical Playbooks** | Pre-loaded response plans for floods, earthquakes, cyclones, fires, and landslides available with zero connectivity |
-| **AI Situation Analysis** | Submit a disaster scenario and receive structured action cards, timeline, and resource recommendations |
-| **AI Chat (NEURIX Command AI)** | Tactical assistant powered by a local Ollama LLM, grounded with live weather and risk telemetry |
-| **Disaster Reports** | Submit and track disaster events with severity, location, GPS, and AI-generated SOP suggestions |
-| **Victim Triage** | Field triage scoring (RED / YELLOW / GREEN tags) with data stored locally and synced to backend |
-| **SOS / Emergency Trigger** | One-tap SOS that records GPS coordinates and can email emergency contacts |
-| **Hospital Locator** | Nearby hospital discovery using an embedded India hospital dataset with bed/ICU status |
-| **Resource Inventory** | Track field resources (boats, kits, personnel) with status: OK / LOW / CRITICAL |
-| **Relief Distribution Log** | Record beneficiary relief distribution with ID verification |
-| **Community Pins** | Crowd-sourced hazard markers (roadblocks, flood zones, landslides) on the map |
-| **Community Updates** | Utility status reporting (electricity, water, medical availability) |
-| **Tactical Recon Screen** | Visual field unit tracking with status, battery, and GPS normalization |
-| **Map View** | Interactive map with disaster overlays, community pins, hospital markers, and blocked roads |
-| **Satellite Tile Service** | NASA GIBS tile proxy (free, no API key) and optional Sentinel-2 tile layer |
-| **Document / Voice Scan** | Upload images or audio files for AI-assisted extraction of field intelligence |
-| **Offline Sync Queue** | Local records queued during outages and automatically pushed to backend when connectivity returns |
-| **JWT Authentication** | Secure registration with email OTP verification, bcrypt password hashing, and JWT tokens |
-| **Blockchain-style Audit Log** | SHA-256 chained event log for tamper-evident tracking of tactical operator actions |
-| **Route Status Tracking** | Field-reported road blockages with alternatives |
-| **Report History** | Per-user archive of all submitted disaster analyses |
-
----
-
-## System Architecture
-
+## 6. System Architecture
 ```mermaid
-flowchart TD
-    A["NEURIX Mobile / Web App\n(React Native + Expo)"] --> B["Offline Layer\n(AsyncStorage + SQLite)"]
-    A --> C["FastAPI Backend\n(Python · Port 8000)"]
-    A --> D["Satellite Tile Service\n(Node.js · Port 3001)"]
+graph TD
+    subgraph Client [Mobile / Web Application]
+        A[React Native / Expo Frontend]
+        B[Local SQLite Cache]
+        C[Offline Map Tiles]
+        A <--> B
+        A <--> C
+    end
 
-    C --> E["SQLite Database\n(SQLAlchemy ORM)"]
-    C --> F["AI Layer\n(Ollama local LLM\nor Gemini API)"]
-    C --> G["External Data Sources\n(USGS · GDACS · OpenWeather)"]
+    subgraph Server [NEURIX FastAPI Backend]
+        D[Ops Engine API]
+        E[Geospatial Proxy]
+        F[AI Orchestrator]
+        D <--> E
+        D <--> F
+    end
 
-    D --> H["NASA GIBS Tile Proxy\n(free, no key required)"]
-    D --> I["Sentinel Hub Tiles\n(optional, requires registration)"]
-    D --> J["Risk Engine\n(weather + seismic analysis)"]
-    D --> K["In-Memory MongoDB\n(falls back if no MongoDB)"]
+    subgraph Data Sources [External APIs]
+        G[USGS / GDACS]
+        H[OSM / Google Maps]
+        I[Gemini / Ollama]
+    end
 
-    B -.->|"sync when online"| C
+    A <-->|REST API / JWT| D
+    E <--> H
+    F <--> I
+    D <--> G
 ```
 
----
+## 7. How NEURIX Works
+1. **Deployment:** Responders log into the app via OTP verification.
+2. **Synchronization:** The app pulls the latest global disaster alerts and local utility data when online.
+3. **Execution:** In the field, responders use the app to view alerts, query offline playbooks, and calculate routes to hospitals.
+4. **AI Assistance:** Responders interact with the AI assistant for triage guidance; the backend routes requests to cloud AI or a local Ollama instance depending on connectivity.
 
-## How It Works
+## 8. Tech Stack
+- **Frontend:** React Native, Expo, React Navigation, NativeWind, Zustand, Mapview.
+- **Backend:** Python, FastAPI, SQLAlchemy, SQLite, Uvicorn, Passlib (JWT).
+- **AI Integrations:** Google Gemini, Anthropic Claude, Ollama (Local).
+- **Geospatial/Mapping:** React Native Maps, Overpass API, Google Maps API, OSRM.
 
-1. **On launch** — The app checks network connectivity via `@react-native-community/netinfo`.
-2. **Online mode** — Fetches live disaster data, weather, map assets, and AI analysis from the FastAPI backend.
-3. **Offline mode** — Falls back to locally cached playbooks stored in `Store/offlineEngine.ts`. Any analysis or triage submissions are queued in AsyncStorage.
-4. **Background sync** — When connectivity returns, `syncManager.pushOfflineQueue()` pushes pending records to `/offline/sync`.
-5. **AI analysis** — Submitting a scenario posts to `/analyze`. The backend calls the local Ollama LLM if available, otherwise falls back to the Gemini API.
-6. **SOS** — The SOS trigger posts to `/api/ops/sos` with GPS coordinates and optional medical metadata. An email alert is dispatched via Gmail SMTP.
-7. **Sentinel background task** — The FastAPI server runs an async background task that syncs earthquake data from USGS and global alerts from GDACS every 5 minutes.
-
----
-
-## Tech Stack
-
-### Frontend
-| Technology | Purpose |
-|---|---|
-| React Native 0.81 | Cross-platform mobile and web UI |
-| Expo SDK 54 | Build toolchain, native modules |
-| Expo Router 6 | File-based navigation |
-| Zustand 5 | Global state management |
-| NativeWind / TailwindCSS | Utility-first styling |
-| AsyncStorage | Local offline data persistence |
-| expo-sqlite | Local relational database |
-| expo-location | GPS coordinate access |
-| expo-camera / expo-image-picker | Photo capture for field reports |
-| expo-secure-store | Secure JWT token storage |
-| axios | HTTP client with auth interceptors |
-
-### Backend (Python / FastAPI)
-| Technology | Purpose |
-|---|---|
-| FastAPI 0.115 | REST API framework |
-| SQLAlchemy 2.0 | ORM for SQLite |
-| SQLite | Local persistent database |
-| Passlib + bcrypt | Password hashing |
-| python-jose | JWT creation and verification |
-| cryptography (Fernet) | Field data encryption at rest |
-| slowapi | Rate limiting |
-| Loguru | Structured logging |
-| Ollama (local) | Offline LLM inference |
-| Google Gemini API | Cloud AI fallback |
-| Anthropic Claude API | Optional cloud AI fallback |
-| Pytesseract + OpenCV | Document OCR scanning |
-| faster-whisper | Voice transcription |
-| PyMuPDF | PDF document processing |
-| googlemaps | Routing and geocoding |
-| reportlab | PDF report generation |
-
-### Satellite / Tile Service (Node.js)
-| Technology | Purpose |
-|---|---|
-| Express 5 | HTTP server |
-| Mongoose + MongoDB | Alert storage (in-memory fallback) |
-| node-cache | Tile caching |
-| node-cron | Scheduled data refresh |
-| Ollama (via axios) | Local LLM for tactical chat |
-| NASA GIBS | Free satellite imagery tiles |
-| Sentinel Hub | Optional Sentinel-2 tiles |
-| OpenWeatherMap | Weather data for risk engine |
-| USGS Earthquake API | Seismic data |
-
----
-
-## Project Structure
-
+## 9. Project Structure
 ```
 NEURIX/
-|
-+-- app/                        # Expo Router screens (file-based routing)
-|   +-- (tabs)/                 # Bottom tab screens
-|   |   +-- index.tsx           # Home / Dashboard
-|   |   +-- chat.tsx            # AI Chat (NEURIX Command AI)
-|   |   +-- community.tsx       # Community reports & pins
-|   |   +-- explore.tsx         # Disaster exploration
-|   |   +-- history.tsx         # Analysis history
-|   |   +-- map.web.tsx         # Map view (web)
-|   |   +-- more.tsx            # Settings & utilities
-|   |   +-- profile.tsx         # User profile
-|   |   +-- recon.native.tsx    # Tactical recon screen (native)
-|   |   +-- report.tsx          # Disaster report submission
-|   +-- auth.tsx                # Registration & login flow
-|   +-- otp-verify.tsx          # OTP verification
-|   +-- triage.tsx              # Victim triage
-|   +-- resources.tsx           # Resource inventory
-|   +-- relief.tsx              # Relief distribution log
-|   +-- hospitals_detail.tsx    # Hospital status detail
-|   +-- alerts_detail.tsx       # Alert detail view
-|   +-- results.tsx             # Analysis results
-|   +-- processing.tsx          # Analysis processing screen
-|   +-- splash.tsx              # Splash screen
-|
-+-- components/                 # Reusable UI components
-|   +-- ReconView.native.tsx    # Tactical map for native
-|   +-- ReconView.tsx           # Tactical map for web
-|   +-- PriorityCard.tsx        # Action card component
-|   +-- ConfidenceBox.tsx       # AI confidence indicator
-|   +-- TacticalStatus.tsx      # Field unit status badge
-|   +-- MissionAssets.tsx       # Asset summary panel
-|   +-- FieldControls.tsx       # Field action controls
-|   +-- Skeleton.tsx            # Loading skeleton
-|   +-- ui/                     # Base UI primitives
-|
-+-- Store/                      # State management & API layer
-|   +-- api.ts                  # All API calls (axios)
-|   +-- offlineEngine.ts        # Offline tactical playbooks
-|   +-- reconEngine.ts          # Recon unit state hook
-|   +-- realData.ts             # Real-data store
-|
-+-- constants/                  # App-wide constants
-|   +-- api.ts                  # Platform-aware API base URL
-|   +-- Colors.ts               # Color palette
-|   +-- design.ts               # Design system tokens
-|   +-- theme.ts                # Theme configuration
-|
-+-- hooks/                      # Custom React hooks
-|   +-- use-color-scheme.ts     # Color scheme detection
-|   +-- use-theme-color.ts      # Theme color resolution
-|
-+-- assets/                     # Static assets (images, icons)
-|
-+-- Backend/                    # Python FastAPI backend
-|   +-- api.py                  # Main API (all routes)
-|   +-- core/
-|   |   +-- config.py           # Settings (env-driven)
-|   |   +-- security.py         # JWT, bcrypt, Fernet encryption
-|   |   +-- email_utils.py      # Gmail SMTP email dispatch
-|   |   +-- offline_intel.py    # Offline playbook data
-|   |   +-- india_hospitals.py  # Hospital dataset handler
-|   +-- db/
-|   |   +-- database.py         # SQLAlchemy engine + session
-|   |   +-- models.py           # ORM models (14 tables)
-|   +-- seed_data.py            # Initial data seeding
-|   +-- seed_hospitals.py       # Hospital data seeding
-|   +-- requirements.txt        # Python dependencies
-|   +-- .env.example            # Environment variable template
-|
-+-- SatelliteBackend/           # Node.js satellite tile service
-|   +-- app.js                  # Express server entry point
-|   +-- routes/
-|   |   +-- tileRoutes.js       # Satellite tile proxy routes
-|   |   +-- disasterRoutes.js   # Disaster intelligence routes
-|   +-- services/
-|   |   +-- openaiService.js    # Ollama local LLM chat
-|   |   +-- riskEngine.js       # Weather + seismic risk analysis
-|   |   +-- earthquakeService.js# USGS earthquake data
-|   |   +-- weatherService.js   # OpenWeatherMap integration
-|   |   +-- nasaService.js      # NASA GIBS tile proxy
-|   |   +-- sentinelService.js  # Sentinel Hub tile proxy
-|   |   +-- scheduler.js        # Background data refresh cron
-|   +-- models/                 # Mongoose models
-|   +-- config/                 # Server configuration
-|   +-- utils/                  # Logger, cache utilities
-|   +-- package.json
-|   +-- .env.example            # Environment variable template
-|
-+-- scripts/                    # Utility scripts
-|   +-- reset-project.js        # Expo project reset helper
-|
-+-- .env.example                # Frontend env template
-+-- .gitignore
-+-- README.md
-+-- RUN_GUIDE.md
-+-- app.json                    # Expo configuration
-+-- package.json
-+-- tsconfig.json
-+-- babel.config.js
-+-- metro.config.cjs
-+-- tailwind.config.js
-+-- start_neurix.bat            # Windows multi-service launcher
+├── app/                  # React Native (Expo Router) screens and layouts
+├── components/           # Reusable UI components
+├── hooks/                # Custom React hooks
+├── constants/            # Theming and styling constants
+├── assets/               # Images and static assets
+├── Store/                # Zustand state management
+├── Backend/              # FastAPI Python backend
+│   ├── core/             # Configuration, security, email, offline logic
+│   ├── db/               # SQLAlchemy models and database setup
+│   └── api.py            # Main API router and endpoints
+├── SatelliteBackend/     # Node.js service for optional map tiling
+├── scripts/              # Utility scripts
+├── .env.example          # Environment variables template
+├── package.json          # Node dependencies
+└── tsconfig.json         # TypeScript configuration
 ```
 
----
-
-## Installation
-
+## 10. Installation
 ### Prerequisites
-
-| Requirement | Version |
-|---|---|
-| Node.js | 18+ |
-| Python | 3.10+ |
-| Expo Go (mobile testing) | Latest |
-| Ollama (optional, for offline AI) | Latest |
+- Node.js (v18+)
+- Python 3.10+
+- Expo CLI
+- Git
 
 ### Clone the Repository
-
 ```bash
 git clone https://github.com/404RUPSAfound/NEURIX.git
 cd NEURIX
 ```
 
----
+## 11. Environment Setup
+1. Copy the example `.env` file in the root directory:
+   ```bash
+   cp .env.example .env
+   ```
+2. Navigate to the `Backend` directory and setup its environment variables:
+   ```bash
+   cd Backend
+   cp .env.example .env
+   ```
+3. Update the `.env` files with your actual API keys (Gemini, SMTP, Google Maps).
 
-## Environment Setup
+## 12. Frontend Setup
+1. From the project root, install Node dependencies:
+   ```bash
+   npm install
+   ```
 
-### Frontend (root `.env`)
+## 13. Backend Setup
+1. Navigate to the `Backend` directory:
+   ```bash
+   cd Backend
+   ```
+2. Create and activate a virtual environment:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows use: venv\Scripts\activate
+   ```
+3. Install Python dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-```bash
-cp .env.example .env
-```
-
-Edit `.env`:
-
-```env
-EXPO_PUBLIC_API_URL=http://127.0.0.1:8000
-EXPO_PUBLIC_SATELLITE_API_URL=http://127.0.0.1:3001
-```
-
-### Backend (`Backend/.env`)
-
-```bash
-cp Backend/.env.example Backend/.env
-```
-
-Edit `Backend/.env` and fill in:
-- `GEMINI_API_KEY` — from [Google AI Studio](https://aistudio.google.com/app/apikey)
-- `SECRET_KEY` — any strong random string (e.g. `openssl rand -hex 32`)
-- `GMAIL_SENDER` + `GMAIL_APP_PASSWORD` — for OTP email delivery (optional)
-
-### Satellite Backend (`SatelliteBackend/.env`)
-
-```bash
-cp SatelliteBackend/.env.example SatelliteBackend/.env
-```
-
-The tile service works without any API key (NASA GIBS is free). Sentinel Hub credentials are optional.
-
----
-
-## Running the Application
-
-All three services must run simultaneously in separate terminals.
-
-### 1. FastAPI Backend (Port 8000)
-
+## 14. Running the Application
+**Start the Backend:**
 ```bash
 cd Backend
-python -m venv venv
-venv\Scripts\activate        # Windows
-# source venv/bin/activate   # macOS/Linux
-pip install -r requirements.txt
-uvicorn api:app --reload --port 8000
+source venv/bin/activate
+uvicorn api:app --reload --host 0.0.0.0 --port 8000
 ```
 
-API docs available at: http://127.0.0.1:8000/docs
-
-### 2. Satellite Tile Service (Port 3001)
-
+**Start the Frontend:**
+Open a new terminal in the project root:
 ```bash
-cd SatelliteBackend
-npm install
-npm start
-```
-
-Health check: http://localhost:3001/health
-
-### 3. Frontend (Expo)
-
-```bash
-# From the project root
-npm install
 npx expo start
 ```
+You can press `a` for Android, `i` for iOS, or `w` for Web.
 
-- Press `w` to open in browser
-- Scan QR with Expo Go for Android/iOS
+## 15. API Overview
+The FastAPI backend exposes endpoints primarily documented via Swagger UI. Once the backend is running, visit `http://localhost:8000/docs` to see:
+- `POST /auth/register`: Operator node registration.
+- `POST /auth/verify-otp`: OTP verification.
+- `POST /auth/login`: Issue JWT token.
+- `GET /api/discovery/utilities`: Fetch local real-world utilities (shops, water, etc.).
+- `POST /api/ops/proxy`: Geospatial proxy for Overpass/Nominatim.
 
-### Windows Quick Start
+## 16. Offline Architecture
+NEURIX achieves offline resilience by caching critical information:
+- The React Native app utilizes SQLite and AsyncStorage to store recently fetched disaster reports and utility data.
+- The AI backend routes fallback queries to a locally hosted Ollama instance when cloud APIs are unreachable.
+- OpenStreetMap and Google Maps routes can be cached locally for active missions.
 
-```bash
-start_neurix.bat
-```
+## 17. AI Integration
+- **Triage & Guidance:** Responders can interact with an AI orchestrator capable of analyzing symptoms and disaster contexts.
+- **Failover Logic:** The backend seamlessly fails over from Google Gemini/Claude to a local Ollama model if external internet goes down, ensuring zero downtime for critical intel.
 
-This launches all three services in separate terminal windows automatically.
+## 18. Screenshots
+*(Placeholder - Replace with actual 4-6 screens of the application)*
+1. Login & OTP Verification
+2. Global Disaster Radar Map
+3. Tactical Feed & Alerts
+4. Local Hospital & Utility Discovery
+5. AI Emergency Assistant
 
-### Optional: Offline AI (Ollama)
+## 19. Future Scope
+- **Bluetooth Mesh & Wi-Fi Direct:** Implement true P2P device-to-device communication for zero-infrastructure networking.
+- **Automated Drone Sync:** Live ingestion of drone video feeds for AI anomaly detection.
+- **Satellite Hardware Integrations:** LoRaWAN and Iridium satellite modem support for extreme remote connectivity.
 
-```bash
-# Install from https://ollama.ai
-ollama pull qwen2.5:0.5b
-ollama serve
-```
+## 20. Limitations
+- True peer-to-peer mesh networking is currently simulated in the UI and requires hardware-level implementation in future updates.
+- Offline map tiles require pre-caching the area of operation before losing connectivity.
 
----
+## 21. Security Considerations
+- **No Hardcoded Secrets:** All sensitive API keys and SMTP credentials must remain in `.env` files and are ignored by git.
+- **Authentication:** All mission endpoints are protected by JWT tokens.
+- **Data Privacy:** OTPs are transient and deleted upon verification. Passwords are cryptographically hashed using Passlib.
 
-## API Overview
+## 22. Disclaimer
+This software is intended as an informational tool and should not be solely relied upon for life-or-death decision-making without proper human operational oversight.
 
-The FastAPI backend exposes the following route groups:
-
-| Route | Method | Description |
-|---|---|---|
-| `/auth/register` | POST | User registration with OTP email |
-| `/auth/verify-otp` | POST | OTP verification and account activation |
-| `/auth/login` | POST | JWT token login |
-| `/analyze` | POST | AI disaster situation analysis |
-| `/replan` | POST | Update existing analysis with new info |
-| `/history` | GET | User analysis history |
-| `/api/map/nearby` | GET | Nearby assets (hospitals, units, disasters) |
-| `/api/dashboard/stats` | GET | Dashboard statistics |
-| `/api/ops/sos` | POST | SOS trigger with GPS |
-| `/api/ops/deploy-unit` | POST | Deploy a field unit |
-| `/api/ops/units` | GET | Live field unit positions |
-| `/api/community/pins` | POST/GET | Community hazard pins |
-| `/api/community/updates` | POST/GET | Community utility status |
-| `/medical/triage` | POST/GET | Victim triage records |
-| `/hospitals/update_beds` | POST | Update hospital bed status |
-| `/medical/route` | POST | Smart hospital routing by triage tag |
-| `/api/scan/document` | POST | OCR document scan |
-| `/api/scan/voice` | POST | Voice transcription |
-| `/offline/sync` | POST | Sync offline-queued records |
-| `/api/weather` | GET | Weather data for a GPS location |
-| `/api/ops/proxy` | POST | Tactical proxy (Overpass / USGS / Nominatim) |
-
-Full interactive documentation: **http://127.0.0.1:8000/docs**
-
----
-
-## Offline Architecture
-
-NEURIX degrades gracefully when connectivity is lost:
-
-```
-Online  --> Backend API --> SQLite + AI analysis
-              |
-              +--> AsyncStorage cache written on every successful response
-              |
-Offline --> AsyncStorage cache read first
-              +--> Tactical playbooks (offlineEngine.ts) served immediately
-              +--> Triage/Relief records queued to offline_history_queue
-              +--> On reconnect: syncManager.pushOfflineQueue() syncs pending records
-```
-
-**Offline playbooks cover:**
-- Flash Flood
-- Earthquake
-- Cyclone / Storm
-- Wildfire
-- Landslide
-
-Each playbook includes: action cards (with priority, time, confidence), operational timeline, resource list, risk zones, safety guidelines, and role delegations.
-
----
-
-## AI Integration
-
-| Layer | Technology | When Used |
-|---|---|---|
-| **Disaster analysis** | Ollama (local) or Gemini API | When user submits a situation report |
-| **Tactical chat** | Ollama (local, via SatelliteBackend) | NEURIX Command AI tab |
-| **Risk engine** | Rule-based (riskEngine.js) | Automatic, based on weather + seismic data |
-| **Document scan** | Tesseract OCR + OpenCV | Upload field documents for text extraction |
-| **Voice scan** | faster-whisper | Upload audio for transcription |
-| **Offline AI** | Static playbook lookup (offlineEngine.ts) | When both Ollama and Gemini are unavailable |
-
-The AI chat system injects live telemetry (location, weather, risk level) into the system prompt. It also supports Hindi/Hinglish inputs.
-
----
-
-## Screenshots
-
-> Screenshots to be added.
-
----
-
-## Future Scope
-
-The following features are **planned but not yet implemented**:
-
-- **True mesh networking** — Bluetooth or Wi-Fi Direct peer-to-peer relay between devices
-- **Push notifications** — Real-time alerts via Expo Notifications or FCM
-- **Android native build** — Full APK/AAB for Play Store deployment
-- **Multi-language UI** — Hindi and regional language interface
-- **Role-based access control** — Separate interfaces for commanders, volunteers, and citizens
-- **Live GPS tracking map** — Real-time field unit positions on the map screen
-- **Production cloud deployment** — Cloud hosting, CI/CD pipeline
-- **Government / NDMA integration** — Data sharing with official disaster databases
-
----
-
-## Limitations
-
-- This is a **prototype** built for learning and portfolio demonstration
-- The backend runs locally; there is no cloud deployment
-- The hospital dataset is pre-seeded and does not reflect real-time bed availability
-- Offline AI responses are rule-based playbooks unless Ollama is locally running
-- The SOS email feature requires valid Gmail SMTP credentials in `.env`
-- The satellite tile service requires internet for live imagery
-- No automated test suite is currently included
-
----
-
-## Disclaimer
-
-**NEURIX is a personal portfolio and research project.**
-
-It is **not** a production emergency response system. It has not been tested, certified, or approved for use in any actual disaster or emergency situation.
-
-**In a real emergency, always contact:**
-- **India Emergency**: 112
-- **NDRF Helpline**: 011-24363260
-- **Ambulance**: 108
-
----
-
-## Suggested GitHub Topics
-
-```
-ai  disaster-management  emergency-response  react-native  expo
-typescript  python  fastapi  offline-first  mobile-app  sqlite  ollama
-```
-
----
-
-## License
-
-This project is released under the [MIT License](LICENSE).
-
----
-
-*Built by [Rupsa Pandit](https://github.com/404RUPSAfound)*
+## 23. License
+[MIT License](LICENSE)

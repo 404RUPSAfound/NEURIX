@@ -1,7 +1,8 @@
 {
   "name": "neurix",
+  "description": "Offline-first AI-powered disaster management platform for emergency communication, response, and coordination.",
   "main": "expo-router/entry",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "scripts": {
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",

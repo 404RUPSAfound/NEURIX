@@ -194,12 +194,11 @@ export default function TriageScreen() {
 }
 
 function CasualtyCard({ patient }: { patient: any }) {
-  if (!patient) return null;
-  const isRed = (patient.tag || patient.triage_level || '').toUpperCase() === 'RED';
-  const color = isRed ? DESIGN.danger : ((patient.tag === 'YELLOW' || patient.triage_level === 'yellow') ? DESIGN.warning : DESIGN.success);
-  
   const pulseAnim = useRef(new Animated.Value(1)).current;
-
+  
+  const isRed = patient ? (patient.tag || patient.triage_level || '').toUpperCase() === 'RED' : false;
+  const color = isRed ? DESIGN.danger : (patient && (patient.tag === 'YELLOW' || patient.triage_level === 'yellow') ? DESIGN.warning : DESIGN.success);
+  
   useEffect(() => {
     if (isRed) {
       Animated.loop(
@@ -209,7 +208,9 @@ function CasualtyCard({ patient }: { patient: any }) {
         ])
       ).start();
     }
-  }, [isRed]);
+  }, [isRed, pulseAnim]);
+
+  if (!patient) return null;
 
   const timeDisplay = patient.timestamp ? new Date(patient.timestamp).toLocaleTimeString([], { hour: '2-digit', minute:'2-digit' }) : '2M AGO';
 

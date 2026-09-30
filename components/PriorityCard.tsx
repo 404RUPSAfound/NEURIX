@@ -65,7 +65,7 @@ export const PriorityCard: React.FC<PriorityCardProps> = ({ title, description, 
           <Animated.View entering={FadeIn} exiting={FadeOut} style={s.expandedBox}>
             <Text style={s.expandedLabel}>AI Rationale</Text>
             <View style={s.rationaleBox}>
-              <Text style={s.rationaleTxt}>"{why}"</Text>
+              <Text style={s.rationaleTxt}>&quot;{why}&quot;</Text>
             </View>
           </Animated.View>
         )}

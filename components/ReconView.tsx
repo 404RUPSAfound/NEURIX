@@ -220,7 +220,7 @@ export default function ReconView() {
           <BlurView intensity={95} tint="dark" style={styles.intelCard}>
             <View style={styles.cardHeader}>
                <View>
-                 <Text style={styles.cardCat}>{selectedAsset.category} // TACTICAL_ASSET</Text>
+                 <Text style={styles.cardCat}>{selectedAsset.category} :: TACTICAL_ASSET</Text>
                  <Text style={styles.cardTitle}>{selectedAsset.name}</Text>
                  <Text style={styles.metaText}>OPERATIONAL :: STATUS_NORMAL</Text>
                </View>
