@@ -11,6 +11,12 @@ from cryptography.fernet import Fernet
 
 from core.config import settings
 
+import passlib.handlers.bcrypt
+try:
+    passlib.handlers.bcrypt.detect_wrap_bug = lambda *args, **kwargs: False
+except Exception:
+    pass
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 security = HTTPBearer(auto_error=False) 
 
@@ -34,14 +40,17 @@ def decrypt_data(cipher_text: str) -> str:
         logger.error(f"Decryption failed: {e}")
         return "[ENCRYPTED DATA]"
 
+import bcrypt
+
 def get_password_hash(password: str) -> str:
-    # bcrypt (passlib) has a 72-byte limit. 
-    # Truncate here to avoid ValueError and maintain standard bcrypt behavior.
-    return pwd_context.hash(password[:72])
+    pwd_bytes = password.encode('utf-8')[:72]
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(pwd_bytes, salt).decode('utf-8')
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     try:
-        return pwd_context.verify(plain_password[:72], hashed_password)
+        pwd_bytes = plain_password.encode('utf-8')[:72]
+        return bcrypt.checkpw(pwd_bytes, hashed_password.encode('utf-8'))
     except Exception:
         return False
 

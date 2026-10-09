@@ -7,7 +7,7 @@ load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 class Settings:
     PROJECT_NAME: str = os.getenv("PROJECT_NAME", "NEURIX Tactical Intelligence")
     VERSION: str = os.getenv("VERSION", "2.0.0")
-    SECRET_KEY: str = os.getenv("SECRET_KEY", "")
+    SECRET_KEY: str = os.getenv("SECRET_KEY", "neurix-tactical-secure-key-2026-ndrf-xyz-abc")
     ALGORITHM: str = os.getenv("ALGORITHM", "HS256")
     ACCESS_TOKEN_EXPIRE_HOURS: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_HOURS", "72"))
 
