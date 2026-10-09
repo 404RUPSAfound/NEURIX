@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 from dotenv import load_dotenv
 
 # Load .env file from the Backend directory
@@ -7,9 +8,30 @@ load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 class Settings:
     PROJECT_NAME: str = os.getenv("PROJECT_NAME", "NEURIX Tactical Intelligence")
     VERSION: str = os.getenv("VERSION", "2.0.0")
-    SECRET_KEY: str = os.getenv("SECRET_KEY", "neurix-tactical-secure-key-2026-ndrf-xyz-abc")
+    ENVIRONMENT: str = os.getenv("ENVIRONMENT", os.getenv("ENV", "development"))
+
+    # Handle explicit empty env var vs missing env var
+    _raw_secret: Optional[str] = os.getenv("SECRET_KEY")
+    SECRET_KEY: str = _raw_secret if _raw_secret is not None else "neurix-tactical-secure-key-2026-ndrf-xyz-abc"
+
+    _raw_enc_key: Optional[str] = os.getenv("ENCRYPTION_KEY")
+    ENCRYPTION_KEY: str = _raw_enc_key if _raw_enc_key is not None else SECRET_KEY
+
     ALGORITHM: str = os.getenv("ALGORITHM", "HS256")
     ACCESS_TOKEN_EXPIRE_HOURS: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_HOURS", "72"))
+
+    def validate_security(self) -> None:
+        """Enforces security rules for production deployments."""
+        env_lower = (self.ENVIRONMENT or "").lower().strip()
+        if env_lower in ["production", "prod"]:
+            secret = self.SECRET_KEY or ""
+            if not secret.strip() or secret == "neurix-tactical-secure-key-2026-ndrf-xyz-abc":
+                raise RuntimeError(
+                    "CRITICAL SECURITY ERROR: Production deployment requires an explicitly configured, "
+                    "strong SECRET_KEY environment variable. Default development secret is forbidden in production."
+                )
+            if len(secret.encode('utf-8')) < 32:
+                raise RuntimeError("CRITICAL SECURITY ERROR: Production SECRET_KEY must be at least 32 bytes.")
 
     # AI Config
     OLLAMA_URL: str = os.getenv("OLLAMA_URL", "http://localhost:11434/api/generate")
@@ -46,3 +68,4 @@ class Settings:
                    len(self.GMAIL_APP_PASSWORD.replace(" ", "")) == 16)
 
 settings = Settings()
+settings.validate_security()

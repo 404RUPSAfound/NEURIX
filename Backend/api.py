@@ -65,6 +65,7 @@ from core.security import (
     create_access_token, 
     verify_token,
     optional_verify_token,
+    require_role,
     encrypt_data,
     decrypt_data
 )
@@ -119,6 +120,7 @@ async def sentinel_background_task():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    settings.validate_security()
     init_db(); init_users(); 
     db = next(get_db())
     seed_tactical_assets(db)
@@ -800,7 +802,7 @@ def init_users() -> None:
 # ─────────────────────────────────────────────
 
 @app.post("/sentinel/sync")
-def trigger_sentinel(user: Dict = Depends(verify_token), db: Session = Depends(get_db)):
+def trigger_sentinel(user: Dict = Depends(require_role(["admin", "commander"])), db: Session = Depends(get_db)):
     """Orchestrates multi-source satellite data ingestion."""
     results = {
         "earthquakes": SentinelEngine.sync_earthquakes(db),
@@ -1103,7 +1105,7 @@ class HospitalUpdateRequest(BaseModel):
 
 
 @app.post("/hospitals/update_beds")
-def update_hospital_beds(req: HospitalUpdateRequest, user: Dict = Depends(verify_token), db: Session = Depends(get_db)):
+def update_hospital_beds(req: HospitalUpdateRequest, user: Dict = Depends(require_role(["admin", "commander", "responder"])), db: Session = Depends(get_db)):
     ensure_schema()
     row = db.query(models.HospitalStatus).filter(models.HospitalStatus.id == req.hospital_id).first()
     if not row:
@@ -1203,7 +1205,7 @@ def ambulance_gps_update(req: AmbulanceGPSRequest, db: Session = Depends(get_db)
 
 
 @app.post("/ops/bootstrap_units")
-def bootstrap_live_units(user: Dict = Depends(verify_token), db: Session = Depends(get_db)):
+def bootstrap_live_units(user: Dict = Depends(require_role(["admin", "commander"])), db: Session = Depends(get_db)):
     """
     One-time helper to register minimal live resources.
     This does NOT create fake incidents; only operational assets used by routing.
@@ -1323,7 +1325,7 @@ class AmbulanceRouteRequest(BaseModel):
 
 
 @app.post("/routing/ambulance")
-def smart_ambulance_routing(req: AmbulanceRouteRequest, user: Dict = Depends(verify_token), db: Session = Depends(get_db)):
+def smart_ambulance_routing(req: AmbulanceRouteRequest, user: Dict = Depends(require_role(["admin", "commander", "responder"])), db: Session = Depends(get_db)):
     ensure_schema()
     ambulances = db.query(models.AmbulanceUnit).filter(models.AmbulanceUnit.status == "available").all()
     if not ambulances:
@@ -1424,7 +1426,7 @@ class DispatchIncidentRequest(BaseModel):
 
 
 @app.post("/ops/dispatch_incident")
-def dispatch_incident(req: DispatchIncidentRequest, user: Dict = Depends(verify_token), db: Session = Depends(get_db)):
+def dispatch_incident(req: DispatchIncidentRequest, user: Dict = Depends(require_role(["admin", "commander", "responder"])), db: Session = Depends(get_db)):
     """
     One-call real dispatch:
     1) pick best hospital based on triage + distance + bed/ICU state
@@ -1535,7 +1537,10 @@ async def register(request: Request, db: Session = Depends(get_db)):
             raise HTTPException(status_code=422, detail="email or phone required")
 
         username = contact.split("@")[0] if "@" in contact else contact
-        password_hash = get_password_hash(password)
+        try:
+            password_hash = get_password_hash(password)
+        except ValueError as ve:
+            raise HTTPException(status_code=422, detail=str(ve))
 
         OTP_STORE[contact] = {
             "code": otp,
@@ -2530,11 +2535,18 @@ def history_list(user: Dict = Depends(verify_token), db: Session = Depends(get_d
 def history_delete(report_id: str, user: Dict = Depends(verify_token), db: Session = Depends(get_db)):
     row = (
         db.query(models.DisasterReport)
-        .filter(models.DisasterReport.id == str(report_id), models.DisasterReport.user_id == user.get("sub"))
+        .filter(models.DisasterReport.id == str(report_id))
         .first()
     )
     if not row:
         raise HTTPException(status_code=404, detail="Report not found")
+
+    user_id = user.get("sub")
+    user_role = str(user.get("role", "volunteer")).lower().strip()
+    if row.user_id and row.user_id != "SYSTEM_ARCHIVE":
+        if row.user_id != user_id and user_role not in ["admin", "commander"]:
+            raise HTTPException(status_code=403, detail="Permission denied: unauthorized attempt to delete report")
+
     db.delete(row)
     db.commit()
     return {"success": True}
@@ -2611,11 +2623,17 @@ def health(db: Session = Depends(get_db)):
 from fastapi.responses import Response
 
 @app.get("/history/{report_id}/pdf")
-def history_pdf_download(report_id: str, user: Dict = Depends(optional_verify_token), db: Session = Depends(get_db)):
+def history_pdf_download(report_id: str, user: Dict = Depends(verify_token), db: Session = Depends(get_db)):
     row = db.query(models.DisasterReport).filter(models.DisasterReport.id == str(report_id)).first()
     if not row:
         raise HTTPException(status_code=404, detail="Report not found")
     
+    user_id = user.get("sub")
+    user_role = str(user.get("role", "volunteer")).lower().strip()
+    if row.user_id and row.user_id != "SYSTEM_ARCHIVE":
+        if row.user_id != user_id and user_role not in ["admin", "commander"]:
+            raise HTTPException(status_code=403, detail="Permission denied: unauthorized access to report PDF")
+
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=letter)
     width, height = letter
@@ -2682,7 +2700,7 @@ def history_pdf_download(report_id: str, user: Dict = Depends(optional_verify_to
 # ─────────────────────────────────────────────
 
 @app.post("/api/community/pins")
-def create_community_pin(req: CommunityPinRequest, user: Dict = Depends(verify_token), db: Session = Depends(get_db)):
+def create_community_pin(req: CommunityPinRequest, user: Dict = Depends(require_role(["admin", "commander", "responder", "volunteer"])), db: Session = Depends(get_db)):
     """CREATE A TACTICAL COMMUNITY ALERT PIN"""
     pid = f"PIN_{uuid.uuid4().hex[:8]}"
     pin = models.CommunityPin(
@@ -2712,7 +2730,7 @@ def get_community_pins(lat: float, lng: float, radius_km: float = 10, db: Sessio
     return {"success": True, "pins": results}
 
 @app.post("/api/community/updates")
-def create_community_update(req: CommunityUpdateRequest, user: Dict = Depends(verify_token), db: Session = Depends(get_db)):
+def create_community_update(req: CommunityUpdateRequest, user: Dict = Depends(require_role(["admin", "commander", "responder", "volunteer"])), db: Session = Depends(get_db)):
     """SHARE CRITICAL COMMUNITY INFO (Water, Electricity, etc.)"""
     uid = f"UPD_{uuid.uuid4().hex[:8]}"
     upd = models.CommunityUpdate(
@@ -2768,7 +2786,7 @@ def sync_pull(user: Optional[Dict] = Depends(optional_verify_token)):
 # ─────────────────────────────────────────────
 
 @app.post("/api/ops/bootstrap")
-def bootstrap_ops(req: BootstrapRequest, user: Dict = Depends(verify_token), db: Session = Depends(get_db)):
+def bootstrap_ops(req: BootstrapRequest, user: Dict = Depends(require_role(["admin", "commander"])), db: Session = Depends(get_db)):
     """RAPID BOOTSTRAP: ACTIVATE ALL STANDBY UNITS IN THE ZONE"""
     # Simulate activation of field units and ambulances
     activated = 0
@@ -2780,7 +2798,7 @@ def bootstrap_ops(req: BootstrapRequest, user: Dict = Depends(verify_token), db:
     return {"success": True, "units_activated": activated, "zone": req.zone}
 
 @app.post("/api/ops/dispatch-red")
-def dispatch_red_triage(req: DispatchRedRequest, user: Dict = Depends(verify_token), db: Session = Depends(get_db)):
+def dispatch_red_triage(req: DispatchRedRequest, user: Dict = Depends(require_role(["admin", "commander", "responder"])), db: Session = Depends(get_db)):
     """AUTOMATIC TRIAGE DISPATCH: SELECT AMBULANCE + HOSPITAL + SECURE ROUTE"""
     # 1. Select nearest active ambulance
     ambs = db.query(models.AmbulanceUnit).filter(models.AmbulanceUnit.status.in_(["available", "standby_ready"])).all()
