@@ -304,98 +304,7 @@ except (redis.ConnectionError, redis.TimeoutError):
 # Ephemeral fallback for Tactical deployment where Docker is not available
 ephemeral_otp_store: Dict[str, str] = {}
 
-@app.get("/api/discovery/utilities")
-def discovery_utilities(lat: float, lng: float, type: str = "shop"):
-    """REAL-WORLD MISSION UTILITY DISCOVERY (High-Performance Engine)"""
-    return {
-        "success": True,
-        "data": fetch_real_utilities(lat, lng, type)
-    }
 
-@app.post("/auth/register")
-def register_node(req: RegisterRequest, db: Session = Depends(get_db)):
-    actual_name = req.name or req.full_name or "Tactical Operator"
-    actual_email = req.email or req.contact
-    if not actual_email:
-        raise HTTPException(status_code=400, detail="Registration requires unique email/contact")
-    
-    existing = db.query(models.User).filter(models.User.email == actual_email).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="Operator node already registered")
-    
-    otp = "".join(random.choices(string.digits, k=6))
-    
-    # Store OTP in Redis (10 minutes expiry) or fallback to RAM
-    if REDIS_ACTIVE:
-        redis_client.setex(f"otp:{actual_email}", 600, otp)
-    else:
-        ephemeral_otp_store[actual_email] = otp
-    
-    logger.info("▆" * 40)
-    logger.info(f"TACTICAL OTP GENERATED FOR: {actual_email}")
-    logger.info(f"ACCESS KEY (OTP): {otp}")
-    logger.info(f"STORAGE: {'REDIS CLUSTER' if REDIS_ACTIVE else 'EPHEMERAL RAM'}")
-    logger.info("▆" * 40)
-    
-    return {"success": True, "message": "OTP broadcasted to tactical channel (Logged in Terminal)"}
-
-@app.post("/auth/verify-otp")
-def verify_otp_node(req: OTPRequest, db: Session = Depends(get_db)):
-    actual_email = req.email or req.contact
-    if not actual_email:
-        raise HTTPException(status_code=400, detail="Contact key required")
-        
-    stored_otp = None
-    if REDIS_ACTIVE:
-        stored_otp = redis_client.get(f"otp:{actual_email}")
-    else:
-        stored_otp = ephemeral_otp_store.get(actual_email)
-
-    if not stored_otp or str(stored_otp) != req.otp:
-        raise HTTPException(status_code=400, detail="Invalid Tactical Access Key (OTP)")
-    
-    # Success: Delete OTP to prevent replay attacks
-    if REDIS_ACTIVE:
-        redis_client.delete(f"otp:{actual_email}")
-    else:
-        del ephemeral_otp_store[actual_email]
-        
-    return {"success": True, "message": "Node verified. Proceed to Login."}
-
-@app.post("/auth/login")
-def login_node(req: LoginRequest, db: Session = Depends(get_db)):
-    actual_email = req.email or req.contact or req.username
-    if not actual_email:
-        raise HTTPException(status_code=400, detail="Login credentials required")
-
-    from sqlalchemy import or_
-    user = db.query(models.User).filter(or_(models.User.email == actual_email, models.User.username == actual_email)).first()
-    # FALLBACK: Auto-Scale node if not exists (Rapid Mission Protocol)
-    if not user:
-        user = models.User(
-            name="Tactical Operator",
-            username=actual_email.split("@")[0] + "_" + str(random.randint(100,999)),
-            email=actual_email,
-            password_hash=get_password_hash(req.password),
-            is_verified=True
-        )
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-    
-    if not verify_password(req.password, user.password_hash):
-        raise HTTPException(status_code=401, detail="Unauthorized Access")
-    
-    token = create_access_token(data={"sub": str(user.id)})
-    return {
-        "success": True,
-        "token": token,
-        "operator": {
-            "id": user.id,
-            "name": user.name,
-            "email": user.email
-        }
-    }
 
 # ─────────────────────────────────────────────
 # NEURIX SENTINEL: LIVE MISSION INGESTION
@@ -799,14 +708,33 @@ class CommunityUpdateRequest(BaseModel):
     photo_url: Optional[str] = None
 
 class SOSRequest(BaseModel):
-    latitude: float
-    longitude: float
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    lat: Optional[float] = None
+    lng: Optional[float] = None
     accuracy: float = 10.0
-    trigger_type: str
+    trigger_type: str = "manual"
+    type: Optional[str] = None
     blood_group: Optional[str] = None
     allergies: Optional[str] = None
     photo_url: Optional[str] = None
     battery: Optional[int] = None
+
+    @property
+    def final_lat(self) -> float:
+        if self.latitude is not None: return self.latitude
+        if self.lat is not None: return self.lat
+        return 0.0
+
+    @property
+    def final_lng(self) -> float:
+        if self.longitude is not None: return self.longitude
+        if self.lng is not None: return self.lng
+        return 0.0
+
+    @property
+    def final_trigger(self) -> str:
+        return self.type or self.trigger_type or "manual"
 
 class BootstrapRequest(BaseModel):
     zone: str
@@ -1077,61 +1005,87 @@ def create_community_pin(req: CommunityPinRequest, user: Dict = Depends(verify_t
     db.commit()
     return {"success": True, "pin_id": pin.id}
 
-class SOSRequest(BaseModel):
-    lat: float
-    lng: float
-    trigger_type: str # crash|manual
-    medical_info: Optional[Dict] = None
-
 @app.post("/api/sos")
-def trigger_sos_protocol(req: SOSRequest, user: Dict = Depends(optional_verify_token), db: Session = Depends(get_db)):
+@app.post("/api/ops/sos")
+def trigger_sos_protocol(req: SOSRequest, user: Optional[Dict] = Depends(optional_verify_token), db: Session = Depends(get_db)):
     """
-    MASTER SOS TRIGGER
-    1. Records incident to blockchain ledger.
-    2. Broadcasts to nearby mesh nodes.
-    3. Triggers simulated Twilio/Email to responders.
+    MASTER SOS TRIGGER & EMERGENCY DISPATCH PROTOCOL
+    1. Records incident to SOSEvent database table & blockchain ledger.
+    2. Broadcasts emergency dispatch alert to nearby responders.
+    3. Finds nearest hospital using embedded geospatial index.
+    4. Sends critical email notification if SMTP configured.
     """
-    op_id = str(user.get("sub", "SURVIVOR-ALPHA"))
+    op_id = str(user.get("sub", "SURVIVOR-ALPHA")) if user else "SURVIVOR-ANONYMOUS"
+    lat = req.final_lat
+    lng = req.final_lng
+    trigger = req.final_trigger
+
+    # 1. Save SOS event to Database
+    sid = f"SOS_{uuid.uuid4().hex[:8]}"
+    sos = models.SOSEvent(
+        id=sid,
+        user_id=op_id,
+        latitude=lat,
+        longitude=lng,
+        accuracy=req.accuracy,
+        trigger_type=trigger,
+        blood_group=req.blood_group,
+        allergies=req.allergies,
+        photo_url=req.photo_url,
+        battery=req.battery
+    )
+    db.add(sos)
+    db.commit()
     
-    # Audit log
+    # 2. Audit log
     TacticalLedger.get_instance().chain_event("SOS_TRIGGERED", op_id, {
-        "lat": req.lat, "lng": req.lng, "type": req.trigger_type
+        "sos_id": sid, "lat": lat, "lng": lng, "type": trigger
     }, db)
 
-    # Find nearest hospital (Real 34k DB check)
-    from core.india_hospitals import get_nearby_hospitals
-    hospitals = get_nearby_hospitals(req.lat, req.lng, radius_km=15, limit=1)
-    hospital_name = hospitals[0]["name"] if hospitals else "Nearest Command Hub"
-
-    # Simulate Email/SMS in terminal (Real-world simulation)
-    logger.critical(f"🚨 SOS_ALERT :: USER {op_id} :: POS ({req.lat}, {req.lng}) :: {req.trigger_type.upper()}")
-    
-    # MISSION CRITICAL: Dispatch real alert to Commander's Node
+    # 3. Find nearest hospital
+    hospital_name = "Nearest Command Hub"
     try:
-        from fastapi import BackgroundTasks
-        # Note: We need a way to get BackgroundTasks here. 
-        # Usually it's a Depends(), but we can also use a helper or just send sync for SOS (high priority).
+        from core.india_hospitals import get_nearby_hospitals
+        hospitals = get_nearby_hospitals(lat, lng, radius_km=15, limit=1)
+        if hospitals:
+            hospital_name = hospitals[0].get("name", hospital_name)
+    except Exception as e:
+        logger.warning(f"Hospital lookup fallback: {e}")
+
+    # 4. Terminal Log
+    logger.critical("▅" * 50)
+    logger.critical(f"🚨 MISSION SOS ALERT ACTIVATED 🚨")
+    logger.critical(f"SID: {sid} | OPERATOR: {op_id}")
+    logger.critical(f"LOCATION: {lat}, {lng} (Accuracy: {req.accuracy}m)")
+    logger.critical(f"TRIGGER: {trigger.upper()}")
+    logger.critical(f"ASSIGNED HUB: {hospital_name}")
+    logger.critical("▅" * 50)
+    
+    # 5. Send Email dispatch alert if configured
+    try:
         from core.email_utils import send_email_sync
-        
         email_body = (
             f"URGENT: NEURIX SOS Protocol Activated!\n\n"
+            f"SOS ID: {sid}\n"
             f"Operator ID: {op_id}\n"
-            f"Coordinates: {req.lat}, {req.lng}\n"
-            f"Trigger: {req.trigger_type.upper()}\n"
+            f"Coordinates: {lat}, {lng}\n"
+            f"Trigger: {trigger.upper()}\n"
             f"Assigned Hospital: {hospital_name}\n"
             f"Time: {datetime.utcnow().isoformat()}\n\n"
-            f"Please check the Tactical Ground Control for immediate routing."
+            f"Please check Tactical Ground Control for immediate routing."
         )
-        send_email_sync(f"🚨 NEURIX SOS: {req.trigger_type.upper()} at {req.lat}, {req.lng}", email_body)
+        send_email_sync(f"🚨 NEURIX SOS: {trigger.upper()} at {lat}, {lng}", email_body)
     except Exception as e:
         logger.error(f"SOS Email dispatch failed: {e}")
 
     return {
         "success": True, 
+        "sos_id": sid,
         "status": "TACTICAL_LINK_ESTABLISHED",
         "assigned_hospital": hospital_name,
         "responder_eta": "12m",
-        "action_required": "STAY CALM. DISPATCH EN ROUTE."
+        "action_required": "STAY CALM. DISPATCH EN ROUTE.",
+        "message": "SOS Broadcasted to Mission Control."
     }
 
 
@@ -2185,98 +2139,7 @@ def toggle_secure_mode(enabled: bool):
     logger.info(f"MISSION SECURITY STATE CHANGED: {state}")
     return {"success": True, "mode": state, "secure": IS_SECURE_MODE}
 
-# ── MISSION-CRITICAL NEURAL INTELLIGENCE ENGINES ────────────────
-# Module: Tactical Asset Scanning & Neural Re-Planning
 
-@app.post("/api/scan/document")
-async def scan_tactical_document(file: UploadFile = File(...)):
-    """Neural PDF/Image Processor: Extracts mission parameters from field docs."""
-    try:
-        content = await file.read()
-        text = ""
-        
-        if file.content_type == "application/pdf":
-            doc = fitz.open(stream=content, filetype="pdf")
-            for page in doc:
-                text += page.get_text()
-            doc.close()
-        else:
-            # Fallback to OCR for images
-            img = Image.open(io.BytesIO(content))
-            text = pytesseract.image_to_string(img)
-
-        # Tactical Pattern Recognition (TPR)
-        casualties = re.search(r'(\d+)\s*(?:casualties|affected|people)', text, re.I)
-        location = re.search(r'location[:\s]+([^\n]+)', text, re.I)
-        severity = "HIGH" if any(word in text.upper() for word in ["CRITICAL", "URGENT", "EXTREME"]) else "MEDIUM"
-
-        return {
-            "success": True,
-            "raw_text": text[:1000],
-            "analysis": {
-                "detected_casualties": int(casualties.group(1)) if casualties else 0,
-                "detected_location": location.group(1).strip() if location else "Unknown Sector",
-                "severity_score": severity
-            }
-        }
-    except Exception as e:
-        logger.error(f"PDF Neural Scan Failed: {e}")
-        return {"success": False, "error": str(e)}
-
-@app.post("/api/scan/voice")
-async def scan_voice_sitrep(file: UploadFile = File(...)):
-    """Whisper-Class Voice Hub: Transcribes and analyzes mission voice reports."""
-    try:
-        # In this version, we implement a robust 'Tactical Voice Simulation' 
-        # that detects keywords from the audio metadata/content if Whisper is ready
-        tokens = ["Evacuation", "Medical", "Supplies", "Search and Rescue", "Blocked Road"]
-        detected = random.sample(tokens, 2)
-        
-        return {
-            "success": True,
-            "transcription": "TACTICAL_VOICE_INGESTED :: SITREP_DETECTED",
-            "intelligence": {
-                "tags": detected,
-                "confidence": 0.94,
-                "summary": f"Operator reporting {detected[0]} and {detected[1]} requirements in current sector."
-            }
-        }
-    except Exception as e:
-        return {"success": False, "error": str(e)}
-
-class ReplanRequest(BaseModel):
-    previous_plan: Dict[str, Any]
-    update_text: str
-
-@app.post("/replan")
-async def strategic_replan(req: ReplanRequest):
-    """Mission Divergence Engine: Generates bypass strategies for blocked operations."""
-    try:
-        prev = req.previous_plan
-        intel = req.update_text.upper()
-        
-        # Divergent Strategy Logic
-        strategy = "CONTINUE_AS_PLANNED"
-        suggestion = "Maintain current vector."
-        
-        if any(w in intel for w in ["BLOCK", "ROAD", "CLOSED", "CUT"]):
-            strategy = "BYPASS_VECTOR_ALPHA"
-            suggestion = "Reroute through secondary access grid. Deploy heavy clearance unit."
-        elif any(w in intel for w in ["FULL", "CAPACITY", "OVERLOAD"]):
-            strategy = "REDIRECT_HUB_BETA"
-            suggestion = "Primary medical center saturated. Divert casualties to nearest standby clinic."
-
-        return {
-            "success": True,
-            "new_strategy": strategy,
-            "executive_summary": f"Divergence detected: {intel}. {suggestion}",
-            "modified_actions": [
-                {"step": 1, "action": "ALERT_FIELD_UNITS", "status": "PENDING"},
-                {"step": 2, "action": strategy, "status": "CALCULATED"}
-            ]
-        }
-    except Exception as e:
-        return {"success": False, "error": str(e)}
 
 @app.get("/api/ops/secure-mode/status")
 def get_secure_mode_status():
@@ -2879,31 +2742,26 @@ def get_community_updates(lat: float, lng: float, radius_km: float = 20, db: Ses
 # MODULE D: SOS & EMERGENCY COORDINATION
 # ─────────────────────────────────────────────
 
-@app.post("/api/sos")
-def trigger_sos(req: SOSRequest, user: Dict = Depends(verify_token), db: Session = Depends(get_db)):
-    """MISSION-CRITICAL SOS BROADCAST"""
-    sid = f"SOS_{uuid.uuid4().hex[:8]}"
-    sos = models.SOSEvent(
-        id=sid, user_id=user.get("sub"), latitude=req.latitude, longitude=req.longitude,
-        accuracy=req.accuracy, trigger_type=req.trigger_type, 
-        blood_group=req.blood_group, allergies=req.allergies,
-        photo_url=req.photo_url, battery=req.battery
-    )
-    db.add(sos); db.commit()
-    
-    # MISSION COMMAND: REAL SOS LOGS TO TERMINAL
-    logger.critical("▅" * 50)
-    logger.critical(f"紧急情况 🚨 MISSION SOS ALERT 🚨 紧急情况")
-    logger.critical(f"SID: {sid} | OPERATOR: {user.get('sub')}")
-    logger.critical(f"LOCATION: {req.latitude}, {req.longitude} (Accuracy: {req.accuracy}m)")
-    logger.critical(f"TRIGGER: {req.trigger_type.upper()}")
-    logger.critical(f"MEDICAL: Blood {req.blood_group} | Allergies: {req.allergies or 'None'}")
-    logger.critical("▅" * 50)
-    
-    # TODO: Connect to Twilio Master Account for SMS dispatch
-    # send_sms(contacts, message)
-    
-    return {"success": True, "sos_id": sid, "message": "SOS Broadcasted to Mission Control."}
+@app.get("/sentinel/metadata")
+def get_sentinel_metadata(db: Session = Depends(get_db)):
+    """SENTINEL INTELLIGENCE METADATA"""
+    return {
+        "success": True,
+        "status": "OPERATIONAL",
+        "last_sync": datetime.utcnow().isoformat(),
+        "satellites": ["USGS_EARTHQUAKE", "GDACS_GLOBAL", "IMD_CYCLONE"],
+        "active_alerts": db.query(models.DisasterReport).filter(models.DisasterReport.source == "SATELLITE").count()
+    }
+
+@app.get("/sync/pull")
+def sync_pull(user: Optional[Dict] = Depends(optional_verify_token)):
+    """OFFLINE PLAYBOOK PULL ENDPOINT"""
+    return {
+        "success": True,
+        "message": "Playbooks up to date.",
+        "version": "2.0.0",
+        "timestamp": datetime.utcnow().isoformat()
+    }
 
 # ─────────────────────────────────────────────
 # MODULE C: DISASTER COMMAND CENTER OPERATIONS
