@@ -327,7 +327,7 @@ export const mapAPI = {
     api.get('/api/ops/dispatch/medical', { params: { lat, lng, triage } }).then((r) => r.data),
 
   getAARUrl: (disaster_id: string) =>
-    `http://127.0.0.1:8001/api/ops/reports/aar?disaster_id=${disaster_id}`,
+    `${BASE_URL}/api/ops/reports/aar?disaster_id=${disaster_id}`,
 
   scanDocument: async (file: any) => {
     const formData = new FormData();

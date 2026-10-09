@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { Globe, ArrowLeft, Clock, MapPin, User, ChevronRight } from 'lucide-react-native';
-import api from '@/Store/api';
+import api, { API_BASE_URL } from '@/Store/api';
 import { DESIGN } from '@/constants/design';
 import * as Location from 'expo-location';
 import { SkeletonList } from '@/components/SkeletonCards';
@@ -59,7 +59,7 @@ export default function ReliefScreen() {
   const fetchCenters = async (coords: {latitude: number, longitude: number}) => {
     try {
       const query = `[out:json];node["amenity"~"social_facility|townhall|community_centre"](around:10000,${coords.latitude},${coords.longitude});out;`;
-      const res = await fetch('http://localhost:8000/api/ops/proxy', {
+      const res = await fetch(`${API_BASE_URL}/api/ops/proxy`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ service: 'overpass', query })

@@ -124,8 +124,8 @@ export default function ReconView() {
       {/* TOP REAL-TIME TACTICAL DASHBOARD */}
       <View style={styles.topDashboard}>
          {[
-           { label: 'DISASTERS', value: stats.disasters || '00', color: '#FF3D00', icon: AlertTriangle },
-           { label: 'MEDICAL', value: stats.medical || '00', color: '#448AFF', icon: Shield },
+           { label: 'DISASTERS', value: stats.disasters || '00', color: '#e73f0cff', icon: AlertTriangle },
+           { label: 'MEDICAL', value: stats.medical || '00', color: '#2a78feff', icon: Shield },
            { label: 'AMBULANCES', value: stats.ambulances || '00', color: '#FFB300', icon: Truck },
            { label: 'FIELD OPS', value: stats.field_ops || '00', color: '#00E676', icon: Target }
          ].map((stat, i) => (

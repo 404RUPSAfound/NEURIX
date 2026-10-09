@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { ChevronLeft, Package, MapPin, AlertCircle, ArrowRight, Truck, ShoppingCart } from 'lucide-react-native';
-import api from '@/Store/api';
+import api, { API_BASE_URL } from '@/Store/api';
 import { DESIGN } from '@/constants/design';
 import { SkeletonList } from '@/components/SkeletonCards';
 import { RefreshControl } from 'react-native';
@@ -58,7 +58,7 @@ export default function ResourcesScreen() {
         setData(res.data);
       } else if (tab === 'discovery') {
         const query = `[out:json];node["shop"~"hardware|supermarket|pharmacy"](around:5000,${coords.latitude},${coords.longitude});out;`;
-        const res = await fetch('http://localhost:8000/api/ops/proxy', {
+        const res = await fetch(`${API_BASE_URL}/api/ops/proxy`, {
            method: 'POST',
            headers: { 'Content-Type': 'application/json' },
            body: JSON.stringify({ service: 'overpass', query })
